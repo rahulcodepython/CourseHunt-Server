@@ -1,0 +1,9 @@
+{% block subject %}
+Hello {{username}}ś
+
+You have applied email reset your account on {{company_name}}, before being able to change your account email you need to verify that this is your email address by 
+<br />
+your activation code is {{ uid }}-{{ token }}
+<br />
+Kind Regards, {{host_email}}
+{% endblock %}
