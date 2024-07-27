@@ -3,9 +3,9 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from . import manager as self_manager
 
 AUTH_METHOD = (
-    ('Credentials', 'Credentials'),
-    ('Google', 'Google'),
-    ('Github', 'Github'),
+    ("Credentials", "Credentials"),
+    ("Google", "Google"),
+    ("Github", "Github"),
 )
 
 
@@ -28,14 +28,14 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = self_manager.UserManager()
 
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'email']
+    REQUIRED_FIELDS = ["first_name", "last_name", "email"]
 
-    USERNAME_FIELD = 'username'
+    USERNAME_FIELD = "username"
 
     class Meta:
-        verbose_name = 'User'
-        verbose_name_plural = 'Users'
-        ordering = ['first_name']
+        verbose_name = "User"
+        verbose_name_plural = "Users"
+        ordering = ["first_name"]
 
     def __str__(self) -> str:
         return self.username
@@ -48,8 +48,8 @@ class ActivationCode(models.Model):
     created_at = models.IntegerField(default=0)
 
     class Meta:
-        verbose_name = 'Activation Code'
-        verbose_name_plural = 'Activation Codes'
+        verbose_name = "Activation Code"
+        verbose_name_plural = "Activation Codes"
 
     def __str__(self) -> str:
         return self.user.username
@@ -62,8 +62,8 @@ class ResetPasswordCode(models.Model):
     created_at = models.IntegerField(default=0)
 
     class Meta:
-        verbose_name = 'Reset Password Code'
-        verbose_name_plural = 'Reset Password Codes'
+        verbose_name = "Reset Password Code"
+        verbose_name_plural = "Reset Password Codes"
 
     def __str__(self) -> str:
         return self.user.username
@@ -76,8 +76,20 @@ class ResetEmailCode(models.Model):
     created_at = models.IntegerField(default=0)
 
     class Meta:
-        verbose_name = 'Reset Email Code'
-        verbose_name_plural = 'Reset Email Codes'
+        verbose_name = "Reset Email Code"
+        verbose_name_plural = "Reset Email Codes"
+
+    def __str__(self) -> str:
+        return self.user.username
+
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    marks = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Profile"
+        verbose_name_plural = "Profiles"
 
     def __str__(self) -> str:
         return self.user.username
