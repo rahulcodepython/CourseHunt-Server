@@ -4,5 +4,5 @@ db.sqlite3
 /authentication/migrations/
 /authentication/__pycache__/
 
-/courses/migrations/
-/courses/__pycache__/
+/course/migrations/
+/course/__pycache__/
