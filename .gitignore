@@ -1,3 +1,8 @@
 .env
 db.sqlite3
 .idea
+/authentication/migrations/
+/authentication/__pycache__/
+
+/courses/migrations/
+/courses/__pycache__/

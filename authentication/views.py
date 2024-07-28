@@ -10,16 +10,16 @@ User = get_user_model()
 
 class Message:
     def warn(msg: str) -> object:
-        return {"body": {"warn": msg}, "status": status.HTTP_406_NOT_ACCEPTABLE}
+        return {"body": {"message": msg}, "status": status.HTTP_406_NOT_ACCEPTABLE}
 
     def error(msg: str) -> object:
-        return {"body": {"error": msg}, "status": status.HTTP_400_BAD_REQUEST}
+        return {"body": {"message": msg}, "status": status.HTTP_400_BAD_REQUEST}
 
     def success(msg: str) -> object:
-        return {"body": {"success": msg}, "status": status.HTTP_200_OK}
+        return {"body": {"message": msg}, "status": status.HTTP_200_OK}
 
     def create(msg: str) -> object:
-        return {"body": {"success": msg}, "status": status.HTTP_201_CREATED}
+        return {"body": {"message": msg}, "status": status.HTTP_201_CREATED}
 
 
 def get_tokens_for_user(user):
@@ -59,7 +59,7 @@ class UserViews(views.APIView):
 
     @staticmethod
     def generate_unique_username(email: str) -> str:
-        return email.split('@')[0]
+        return email.split("@")[0]
 
     def get(self, request):
         try:
@@ -79,14 +79,19 @@ class UserViews(views.APIView):
             if check_email_exists(request.data["email"]):
                 if not check_user_active(request.data["email"]):
                     res = Message.warn(
-                        msg="You have already registered. But not verified you email yet. Please verify it first.")
+                        msg="You have already registered. But not verified you email yet. Please verify it first."
+                    )
                     return response.Response(res["body"], status=res["status"])
 
                 res = Message.warn(msg="You have already registered.")
                 return response.Response(res["body"], status=res["status"])
 
             serialized_data = serializers.UserCreateSerializer(
-                data={**request.data, "username": self.generate_unique_username(request.data["email"])})
+                data={
+                    **request.data,
+                    "username": self.generate_unique_username(request.data["email"]),
+                }
+            )
 
             if not serialized_data.is_valid():
                 res = Message.error(
@@ -99,10 +104,16 @@ class UserViews(views.APIView):
             activation_code = models.ActivationCode.objects.create(
                 user=user, uid=self.create_uid(), token=self.create_token()
             )
-            email.ActivationEmail(uid=activation_code.uid, token=activation_code.token, email=user.email,
-                                  username=user.username)
+            email.ActivationEmail(
+                uid=activation_code.uid,
+                token=activation_code.token,
+                email=user.email,
+                username=user.username,
+            )
 
-            res = Message.create(msg="Your account has been creates. At First verify it.")
+            res = Message.create(
+                msg="Your account has been creates. At First verify it."
+            )
             return response.Response(res["body"], status=res["status"])
 
         except Exception as e:
@@ -166,7 +177,9 @@ class ActivateUserViews(views.APIView):
             user.save()
             models.ActivationCode.objects.filter(uid=uid, token=token)[0].delete()
 
-            return response.Response(get_tokens_for_user(user), status=status.HTTP_200_OK)
+            return response.Response(
+                get_tokens_for_user(user), status=status.HTTP_200_OK
+            )
 
         except Exception as e:
             res = Message.error(f"{e}")
@@ -207,8 +220,12 @@ class ResendActivateUserViews(views.APIView):
                 user=user, uid=self.create_uid(), token=self.create_token()
             )
 
-            email.ActivationEmail(uid=activation_code.uid, token=activation_code.token, email=user.email,
-                                  username=user.username)
+            email.ActivationEmail(
+                uid=activation_code.uid,
+                token=activation_code.token,
+                email=user.email,
+                username=user.username,
+            )
 
             res = Message.success(msg="Activation link has been sent to your email.")
             return response.Response(res["body"], status=res["status"])
@@ -233,7 +250,9 @@ class CreateJWT(views.APIView):
             user = authenticate(username=username, password=password)
 
             if user is None:
-                res = Message.error(msg="You are not authenticated properly. Try again.")
+                res = Message.error(
+                    msg="You are not authenticated properly. Try again."
+                )
                 return response.Response(res["body"], status=res["status"])
 
             if not user.is_active:
@@ -275,8 +294,12 @@ class ResetUserPassword(views.APIView):
             reset_password_code = models.ResetPasswordCode.objects.create(
                 user=request.user, uid=self.create_uid(), token=self.create_token()
             )
-            email.ResetPasswordConfirmation(uid=reset_password_code.uid, token=reset_password_code.token,
-                                            email=request.user.email, username=request.user.username)
+            email.ResetPasswordConfirmation(
+                uid=reset_password_code.uid,
+                token=reset_password_code.token,
+                email=request.user.email,
+                username=request.user.username,
+            )
 
             res = Message.success(msg="Reset Password link is sent to your mail.")
             return response.Response(res["body"], status=res["status"])
@@ -296,11 +319,15 @@ class ResetUserPassword(views.APIView):
             uid = request.data["uid"]
             token = request.data["token"]
 
-            if not models.ResetPasswordCode.objects.filter(uid=uid, token=token).exists():
+            if not models.ResetPasswordCode.objects.filter(
+                uid=uid, token=token
+            ).exists():
                 res = Message.error(msg="You have entered wrong code. Try again.")
                 return response.Response(res["body"], status=res["status"])
 
-            reset_password_code = models.ResetPasswordCode.objects.filter(uid=uid, token=token)[0]
+            reset_password_code = models.ResetPasswordCode.objects.filter(
+                uid=uid, token=token
+            )[0]
 
             if reset_password_code.user != request.user:
                 res = Message.error(msg="You are not allowed to do this. Try again.")
@@ -309,7 +336,9 @@ class ResetUserPassword(views.APIView):
             user = request.user
 
             if not user.check_password(current_password):
-                res = Message.error(msg="Your current password is not correct. Try again.")
+                res = Message.error(
+                    msg="Your current password is not correct. Try again."
+                )
                 return response.Response(res["body"], status=res["status"])
 
             user.set_password(new_password)
@@ -352,8 +381,12 @@ class ResetUserEmail(views.APIView):
             reset_email_code = models.ResetEmailCode.objects.create(
                 user=request.user, uid=self.create_uid(), token=self.create_token()
             )
-            email.ResetEmailConfirmation(uid=reset_email_code.uid, token=reset_email_code.token,
-                                         email=new_email, username=request.user.username)
+            email.ResetEmailConfirmation(
+                uid=reset_email_code.uid,
+                token=reset_email_code.token,
+                email=new_email,
+                username=request.user.username,
+            )
 
             res = Message.success(msg="Reset Email link is sent to your email.")
             return response.Response(res["body"], status=res["status"])
@@ -378,7 +411,9 @@ class UpdateEmailView(views.APIView):
                 res = Message.error(msg="You have entered wrong code. Try again.")
                 return response.Response(res["body"], status=res["status"])
 
-            reset_email_code = models.ResetEmailCode.objects.filter(uid=uid, token=token)[0]
+            reset_email_code = models.ResetEmailCode.objects.filter(
+                uid=uid, token=token
+            )[0]
 
             if reset_email_code.user != request.user:
                 res = Message.error(msg="You are not allowed to do this. Try again.")
@@ -410,7 +445,8 @@ class github_authenticate(views.APIView):
         code = request.GET.get("code")
         if not code:
             return response.Response(
-                {"error": "Authorization code not provided"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Authorization code not provided"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         data = {
@@ -437,11 +473,15 @@ class github_authenticate(views.APIView):
             try:
                 if User.objects.filter(username=github_username).exists():
                     user = User.objects.get(username=github_username)
-                    return response.Response(get_tokens_for_user(user), status=status.HTTP_200_OK)
+                    return response.Response(
+                        get_tokens_for_user(user), status=status.HTTP_200_OK
+                    )
 
-                github_email = user_data.get("email") if user_data.get("email") else None
+                github_email = (
+                    user_data.get("email") if user_data.get("email") else None
+                )
                 first_name = user_data.get("name").split()[0]
-                last_name = ''.join(user_data.get("name").split()[1:])
+                last_name = "".join(user_data.get("name").split()[1:])
                 password = user_data.get("node_id")
                 image = user_data.get("avatar_url")
                 # html_url = user_data.get("html_url")
@@ -453,21 +493,26 @@ class github_authenticate(views.APIView):
                     first_name=first_name,
                     last_name=last_name,
                     image=image,
-                    method='Github',
-                    is_active=True
+                    method="Github",
+                    is_active=True,
                 )
                 user.set_password(password)
                 user.save()
 
-                return response.Response(get_tokens_for_user(user), status=status.HTTP_200_OK)
+                return response.Response(
+                    get_tokens_for_user(user), status=status.HTTP_200_OK
+                )
                 # return response.Response({"error": str("e")}, status=status.HTTP_200_OK)
 
             except Exception as e:
-                return response.Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                return response.Response(
+                    {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
+                )
 
         else:
             return response.Response(
-                {"error": "Failed to authenticate with GitHub"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Failed to authenticate with GitHub"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
 
@@ -483,7 +528,8 @@ class google_authenticate(views.APIView):
         code = request.GET.get("code")
         if not code:
             return response.Response(
-                {"error": "Authorization code not provided"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Authorization code not provided"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         data = {
@@ -494,7 +540,9 @@ class google_authenticate(views.APIView):
             "grant_type": "authorization_code",
         }
 
-        response_google = requests.post("https://oauth2.googleapis.com/token", data=data)
+        response_google = requests.post(
+            "https://oauth2.googleapis.com/token", data=data
+        )
         access_token = response_google.json().get("access_token")
 
         if access_token:
@@ -508,7 +556,9 @@ class google_authenticate(views.APIView):
             try:
                 if User.objects.filter(email=google_email).exists():
                     user = User.objects.get(email=google_email)
-                    return response.Response(get_tokens_for_user(user), status=status.HTTP_200_OK)
+                    return response.Response(
+                        get_tokens_for_user(user), status=status.HTTP_200_OK
+                    )
 
                 google_username = google_email.split("@")[0]
                 first_name = user_data.get("given_name")
@@ -522,18 +572,23 @@ class google_authenticate(views.APIView):
                     first_name=first_name,
                     last_name=last_name,
                     image=image,
-                    method='Google',
-                    is_active=True
+                    method="Google",
+                    is_active=True,
                 )
                 user.set_password(password)
                 user.save()
 
-                return response.Response(get_tokens_for_user(user), status=status.HTTP_200_OK)
+                return response.Response(
+                    get_tokens_for_user(user), status=status.HTTP_200_OK
+                )
 
             except Exception as e:
-                return response.Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                return response.Response(
+                    {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
+                )
 
         else:
             return response.Response(
-                {"error": "Failed to authenticate with Google"}, status=status.HTTP_400_BAD_REQUEST
+                {"error": "Failed to authenticate with Google"},
+                status=status.HTTP_400_BAD_REQUEST,
             )
