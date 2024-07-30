@@ -37,3 +37,24 @@ class FAQEditSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.FAQ
         fields = "__all__"
+
+
+class AdminCourseListSerializer(serializers.ModelSerializer):
+    cupon_code = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.Course
+        fields = [
+            "id",
+            "name",
+            "price",
+            "chapter",
+            "offer",
+            "duration",
+            "created_at",
+            "status",
+            "cupon_code",
+        ]
+
+    def get_cupon_code(self, obj):
+        return obj.cupon_code.code if obj.cupon_code else None

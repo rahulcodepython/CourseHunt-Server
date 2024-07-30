@@ -8,5 +8,10 @@ urlpatterns = [
         "edit-chapter/<str:id>/", views.EditChapterView.as_view(), name="edit_chapter"
     ),
     path("edit-faq/<str:id>/", views.EditFAQView.as_view(), name="edit_chapter"),
-    # path("courses/", views.CourseList.as_view(), name="course_list"),
+    path(
+        "publish-course/<str:id>/",
+        views.PublishCourseView.as_view(),
+        name="publish_course",
+    ),
+    path("admin-courses/", views.AdminCourseList.as_view(), name="admin_course_list"),
 ]

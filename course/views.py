@@ -1,5 +1,7 @@
-from rest_framework import views, response, status
+from rest_framework import views, response, status, permissions
+from django.core.paginator import Paginator
 from . import serializers, models
+import os
 
 
 class Message:
@@ -17,6 +19,8 @@ class Message:
 
 
 class CreateCourseView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
     def post(self, request):
         try:
             course = models.Course.objects.create(created_at=request.data["created_at"])
@@ -35,6 +39,8 @@ class CreateCourseView(views.APIView):
 
 
 class EditCourseView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
     def get(self, request, id):
         try:
             course = models.Course.objects.get(id=id)
@@ -81,6 +87,8 @@ class EditCourseView(views.APIView):
 
 
 class EditChapterView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
     def get(self, request, id):
         try:
             course = models.Course.objects.get(id=id)
@@ -139,6 +147,8 @@ class EditChapterView(views.APIView):
 
 
 class EditFAQView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
     def get(self, request, id):
         try:
             course = models.Course.objects.get(id=id)
@@ -176,6 +186,67 @@ class EditFAQView(views.APIView):
 
             res = Message.create("FAQ is updated!")
             return response.Response(res["body"], status=res["status"])
+
+        except Exception as e:
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
+
+
+class PublishCourseView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, id):
+        try:
+            course = models.Course.objects.get(id=id)
+            course.status = "draft" if course.status == "published" else "published"
+            course.save()
+
+            return response.Response(
+                {"message": "Course is updated.", "status": course.status},
+                status=status.HTTP_200_OK,
+            )
+
+        except Exception as e:
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
+
+
+class AdminCourseList(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        try:
+            page = request.GET.get("page")
+            page = 1 if page is None else page
+
+            limit = request.GET.get("limit")
+            limit = 5 if limit is None else limit
+
+            courses = models.Course.objects.all()
+            serialized = serializers.AdminCourseListSerializer(courses, many=True)
+
+            paginator = Paginator(serialized.data, limit)
+            paginated = paginator.page(page)
+
+            url = f"{os.environ.get('BASE_API_URL')}/course/admin-courses/"
+
+            return response.Response(
+                {
+                    "count": paginator.count,
+                    "next": (
+                        f"{url}?page={paginated.next_page_number()}"
+                        if paginated.has_next()
+                        else None
+                    ),
+                    "previous": (
+                        f"{url}?page={paginated.previous_page_number()}"
+                        if paginated.has_previous()
+                        else None
+                    ),
+                    "results": serialized.data,
+                },
+                status=status.HTTP_200_OK,
+            )
 
         except Exception as e:
             res = Message.warn(str(e))
