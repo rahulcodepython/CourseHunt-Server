@@ -159,13 +159,13 @@ class EditFAQView(views.APIView):
         try:
             course = models.Course.objects.get(id=id)
 
-            for i in request.data:
+            for i in request.data["faq"]:
                 if i["id"] == None:
                     faq = models.FAQ.objects.create(
                         question=i["question"], answer=i["answer"]
                     )
                     faq.save()
-                    course.faq.add(faq.id)
+                    course.faq.add(faq)
                 else:
                     faq = models.FAQ.objects.get(id=i["id"])
                     faq.question = i["question"]
@@ -178,6 +178,5 @@ class EditFAQView(views.APIView):
             return response.Response(res["body"], status=res["status"])
 
         except Exception as e:
-            print(e)
             res = Message.warn(str(e))
             return response.Response(res["body"], status=res["status"])
