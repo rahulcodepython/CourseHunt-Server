@@ -3,9 +3,7 @@ from . import models
 
 
 class CourseEditSerializer(serializers.ModelSerializer):
-    cupon_code = serializers.CharField(
-        required=False, allow_blank=True, allow_null=True
-    )
+    cupon_code = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Course
@@ -19,6 +17,9 @@ class CourseEditSerializer(serializers.ModelSerializer):
             "overview",
             "cupon_code",
         ]
+
+    def get_cupon_code(self, obj):
+        return obj.cupon_code.code if obj.cupon_code else None
 
 
 class ChapterEditSerializer(serializers.ModelSerializer):
