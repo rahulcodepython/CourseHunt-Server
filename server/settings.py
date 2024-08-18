@@ -29,13 +29,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     # Custom apps
-    "authentication.apps.AuthenticationConfig",
+    "authentication",
+    "course",
     # Third party packages
     "rest_framework",
     "corsheaders",
     "rest_framework_simplejwt",
     "mail_templated",
-    "course",
 ]
 
 MIDDLEWARE = [
@@ -153,8 +153,8 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": False,
     "AUTH_HEADER_TYPES": ("Bearer"),
-    "USER_ID_FIELD": "id",
-    "USER_ID_CLAIM": "user_id",
+    "USER_ID_FIELD": "username",
+    "USER_ID_CLAIM": "username",
 }
 
 # GitHub OAuth details

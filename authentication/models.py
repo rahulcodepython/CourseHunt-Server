@@ -10,7 +10,12 @@ AUTH_METHOD = (
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    username = models.CharField(max_length=1000, unique=True)
+    username = models.CharField(
+        max_length=1000,
+        unique=True,
+        primary_key=True,
+        db_index=True,
+    )
     email = models.EmailField(unique=True, max_length=254, blank=True, null=True)
     first_name = models.CharField(max_length=1000, blank=True)
     last_name = models.CharField(max_length=1000, blank=True)

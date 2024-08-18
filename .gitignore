@@ -1,8 +1,12 @@
 .env
 db.sqlite3
 .idea
-/authentication/migrations/
-/authentication/__pycache__/
+.vscode
 
-/course/migrations/
-/course/__pycache__/
+/authentication/migrations/*
+!/authentication/migrations/__init__.py
+/authentication/migrations/**/__pycache__/
+
+/course/migrations/*
+!/course/migrations/__init__.py
+/course/migrations/**/__pycache__/
