@@ -259,9 +259,39 @@ class CreateJWT(views.APIView):
                 res = Message.error(msg="You are not verified yet. Verify first.")
                 return response.Response(res["body"], status=res["status"])
 
-            res = Message.success(msg="You are authenticated.")
             return response.Response(
-                {**res["body"], **get_tokens_for_user(user)}, status=res["status"]
+                {
+                    **get_tokens_for_user(user),
+                    "user": serializers.UserSerializer(user).data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except Exception as e:
+            res = Message.error(f"{e}")
+            return response.Response(res["body"], status=res["status"])
+
+
+class TokenRefreshView(views.APIView):
+    def post(self, request):
+        try:
+            refresh = request.data.get("refresh")
+
+            if refresh is None:
+                res = Message.error(msg="No refresh token provided.")
+                return response.Response(res["body"], status=res["status"])
+
+            token = RefreshToken(refresh)
+
+            user = User.objects.get(id=token["user_id"])
+
+            return response.Response(
+                {
+                    "access": str(token.access_token),
+                    "refresh": str(token),
+                    "user": serializers.UserSerializer(user).data,
+                },
+                status=status.HTTP_200_OK,
             )
 
         except Exception as e:
