@@ -178,7 +178,11 @@ class ActivateUserViews(views.APIView):
             models.ActivationCode.objects.filter(uid=uid, token=token)[0].delete()
 
             return response.Response(
-                get_tokens_for_user(user), status=status.HTTP_200_OK
+                {
+                    **get_tokens_for_user(user),
+                    "user": serializers.UserSerializer(user).data,
+                },
+                status=status.HTTP_200_OK,
             )
 
         except Exception as e:
@@ -504,7 +508,11 @@ class github_authenticate(views.APIView):
                 if User.objects.filter(username=github_username).exists():
                     user = User.objects.get(username=github_username)
                     return response.Response(
-                        get_tokens_for_user(user), status=status.HTTP_200_OK
+                        {
+                            **get_tokens_for_user(user),
+                            "user": serializers.UserSerializer(user).data,
+                        },
+                        status=status.HTTP_200_OK,
                     )
 
                 github_email = (
@@ -530,7 +538,11 @@ class github_authenticate(views.APIView):
                 user.save()
 
                 return response.Response(
-                    get_tokens_for_user(user), status=status.HTTP_200_OK
+                    {
+                        **get_tokens_for_user(user),
+                        "user": serializers.UserSerializer(user).data,
+                    },
+                    status=status.HTTP_200_OK,
                 )
                 # return response.Response({"error": str("e")}, status=status.HTTP_200_OK)
 
@@ -587,7 +599,11 @@ class google_authenticate(views.APIView):
                 if User.objects.filter(email=google_email).exists():
                     user = User.objects.get(email=google_email)
                     return response.Response(
-                        get_tokens_for_user(user), status=status.HTTP_200_OK
+                        {
+                            **get_tokens_for_user(user),
+                            "user": serializers.UserSerializer(user).data,
+                        },
+                        status=status.HTTP_200_OK,
                     )
 
                 google_username = google_email.split("@")[0]
@@ -609,7 +625,11 @@ class google_authenticate(views.APIView):
                 user.save()
 
                 return response.Response(
-                    get_tokens_for_user(user), status=status.HTTP_200_OK
+                    {
+                        **get_tokens_for_user(user),
+                        "user": serializers.UserSerializer(user).data,
+                    },
+                    status=status.HTTP_200_OK,
                 )
 
             except Exception as e:
