@@ -125,7 +125,7 @@ class EditChapterView(views.APIView):
                     chapter.duration = i["duration"]
 
                     for j in i["lessons"]:
-                        if j["id"] in chapter.lessons:
+                        if "id" in j and j["id"] in chapter.lessons:
                             lesson = models.Lesson.objects.get(id=j["id"])
                             lesson.name = j["name"]
                             lesson.save()
