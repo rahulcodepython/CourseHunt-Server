@@ -1,4 +1,3 @@
-from rest_framework_simplejwt.views import TokenVerifyView
 from django.urls import path
 from . import views
 
@@ -8,7 +7,8 @@ urlpatterns = [
     path("users/resend_activation/", views.ResendActivateUserViews.as_view()),
     path("users/jwt/create/", views.CreateJWT.as_view()),
     path("users/jwt/refresh/", views.TokenRefreshView.as_view()),
-    path("users/jwt/verify/", TokenVerifyView.as_view(), name="token_verify"),
+    path("users/jwt/verify/", views.TokenVerifyView.as_view()),
+    path("users/user/", views.UserDataView.as_view()),
     path("users/set_password/", views.ResetUserPassword.as_view()),
     path("users/set_email/", views.ResetUserEmail.as_view()),
     path("users/update_email/", views.UpdateEmailView.as_view()),

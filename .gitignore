@@ -2,6 +2,7 @@
 db.sqlite3
 .idea
 .vscode
+data
 
 /authentication/migrations/*
 !/authentication/migrations/__init__.py
