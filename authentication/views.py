@@ -1,7 +1,5 @@
-from rest_framework_simplejwt.tokens import RefreshToken, UntypedToken
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model, authenticate
-from rest_framework_simplejwt.views import TokenVerifyView
-from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework import views, response, status
 from django.conf import settings
 from . import serializers, email, models, tokens
@@ -312,27 +310,6 @@ class TokenRefreshView(views.APIView):
         except Exception as e:
             res = Message.error(f"{e}")
             return response.Response(res["body"], status=res["status"])
-
-
-class TokenVerifyView(TokenVerifyView):
-    def post(self, request, *args, **kwargs):
-        access = request.data.get("access")
-        refresh = request.data.get("refresh")
-
-        try:
-            if access is not None:
-                UntypedToken(access)
-            if refresh is not None:
-                UntypedToken(refresh)
-
-            return response.Response(
-                {"message": "Token is valid"}, status=status.HTTP_200_OK
-            )
-
-        except TokenError as e:
-            return response.Response(
-                {"message": str(e)}, status=status.HTTP_401_UNAUTHORIZED
-            )
 
 
 class UserDataView(views.APIView):

@@ -2,60 +2,39 @@ from rest_framework import serializers
 from . import models
 
 
-class CourseEditSerializer(serializers.ModelSerializer):
-    cupon_code = serializers.SerializerMethodField()
-
+class CreateCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Course
-        fields = [
-            "name",
-            "description",
-            "price",
-            "offer",
-            "duration",
-            "chapter",
-            "overview",
-            "cupon_code",
-        ]
-
-    def get_cupon_code(self, obj):
-        return obj.cupon_code.code if obj.cupon_code else None
-
-
-class ChapterEditSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Chapter
-        fields = ["id", "name", "duration"]
-
-
-class LessonEditSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Lesson
-        fields = ["id", "name"]
-
-
-class FAQEditSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.FAQ
         fields = "__all__"
 
+    def create(self, validated_data):
+        return super().create(validated_data)
 
-class AdminCourseListSerializer(serializers.ModelSerializer):
-    cupon_code = serializers.SerializerMethodField()
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)
 
+
+class DetailSingleCourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Course
-        fields = [
-            "id",
-            "name",
-            "price",
-            "chapter",
-            "offer",
-            "duration",
-            "created_at",
+        exclude = [
             "status",
-            "cupon_code",
+            "videoURL",
+            "notesURL",
+            "presentationURL",
+            "codeURL",
+            "content",
         ]
 
-    def get_cupon_code(self, obj):
-        return obj.cupon_code.code if obj.cupon_code else None
+
+class ListCoursesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Course
+        exclude = [
+            "long_description",
+            "videoURL",
+            "notesURL",
+            "presentationURL",
+            "codeURL",
+            "content",
+        ]

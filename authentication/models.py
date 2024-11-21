@@ -90,7 +90,7 @@ class ResetEmailCode(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    marks = models.IntegerField(default=0)
+    purchased_courses = models.ManyToManyField("course.Course", blank=True)
 
     class Meta:
         verbose_name = "Profile"
