@@ -38,3 +38,9 @@ class ListCoursesSerializer(serializers.ModelSerializer):
             "codeURL",
             "content",
         ]
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Purchase
+        fields = "__all__"

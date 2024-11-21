@@ -1,7 +1,14 @@
 from rest_framework import views, response, status, permissions
 from django.core.paginator import Paginator
 from . import serializers, models
-import os
+import razorpay
+from django.conf import settings
+from .serializers import OrderSerializer
+from django.shortcuts import get_object_or_404
+
+razorpay_client = razorpay.Client(
+    auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_SECRET_KEY)
+)
 
 
 class Message:
@@ -180,3 +187,60 @@ class DeleteCourseView(views.APIView):
         except Exception as e:
             res = Message.warn(str(e))
             return response.Response(res["body"], status=res["status"])
+
+
+class InitiatePayment(views.APIView):
+    def get(self, request, course_id):
+        course = get_object_or_404(models.Course, id=course_id)
+        user = request.user
+        amount = int(course.price * 100)  # Razorpay amount is in paisa
+
+        # Create a Razorpay Order
+        razorpay_order = razorpay_client.order.create(
+            {"amount": amount, "currency": "INR", "payment_capture": "1"}
+        )
+
+        # Create an Order in our DB
+        models.Purchase.objects.create(
+            course=course,
+            user=user,
+            amount=course.price,
+            razorpay_order_id=razorpay_order["id"],
+        )
+
+        return response.Response(
+            {
+                "order_id": razorpay_order["id"],
+                "amount": amount,
+                "currency": "INR",
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class VerifyPayment(views.APIView):
+    def post(self, request):
+        data = request.data
+        purchase = get_object_or_404(
+            models.Purchase, razorpay_order_id=data["razorpay_order_id"]
+        )
+
+        # Verify Razorpay Signature
+        try:
+            razorpay_client.utility.verify_payment_signature(data)
+            purchase.is_paid = True
+            purchase.razorpay_payment_id = data["razorpay_payment_id"]
+            purchase.razorpay_signature = data["razorpay_signature"]
+            purchase.save()
+
+            course = models.Course.objects.get(id=data["course_id"])
+            user = request.user
+
+            user.profile.purchased_courses.add(course)
+            user.profile.save()
+
+            return response.Response({"status": "Payment successful"})
+        except razorpay.errors.SignatureVerificationError:
+            return response.Response(
+                {"status": "Payment failed"}, status=status.HTTP_400_BAD_REQUEST
+            )

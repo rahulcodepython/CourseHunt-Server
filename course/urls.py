@@ -39,4 +39,10 @@ urlpatterns = [
         views.DeleteCourseView.as_view(),
         name="delete-course",
     ),
+    path(
+        "payment/initiate/<str:course_id>/",
+        views.InitiatePayment.as_view(),
+        name="initiate-payment",
+    ),
+    path("payment/verify/", views.VerifyPayment.as_view(), name="verify-payment"),
 ]
