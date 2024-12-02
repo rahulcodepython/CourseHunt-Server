@@ -2,6 +2,7 @@ from datetime import timedelta
 from dotenv import load_dotenv
 from pathlib import Path
 import os
+from django.core.management.utils import get_random_secret_key
 
 # Load environment variables
 load_dotenv()
@@ -13,12 +14,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True if os.getenv("DEBUG") == "True" else False
+DEBUG = True if os.getenv("DEBUG", "False") == "True" else False
 
-ALLOWED_HOSTS = ["127.0.0.1", ".vercel.app"]
+ALLOWED_HOSTS = ["*"]
 
 # api/settings.py
 WSGI_APPLICATION = "backend.wsgi.app"
@@ -78,12 +79,24 @@ WSGI_APPLICATION = "server.wsgi.application"
 # Database
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv("DB_ENGINE"),
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
+        "ENGINE": os.getenv(
+            "DB_ENGINE",
+        ),
+        "NAME": os.getenv(
+            "DB_NAME",
+        ),
+        "USER": os.getenv(
+            "DB_USER",
+        ),
+        "PASSWORD": os.getenv(
+            "DB_PASSWORD",
+        ),
+        "HOST": os.getenv(
+            "DB_HOST",
+        ),
+        "PORT": os.getenv(
+            "DB_PORT",
+        ),
     }
 }
 
@@ -136,8 +149,8 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 COMPANY_NAME = "Z-Tube"
 
 # Process Configuration
@@ -161,18 +174,18 @@ SIMPLE_JWT = {
 }
 
 # GitHub OAuth details
-GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
-GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
+GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
+GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
 # Google OAuth details
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
 # Backend URL
-BACKEND_URL = os.getenv("BASE_API_URL")
-GITHUB_REDIRECT_URI = os.getenv("GITHUB_REDIRECT_URI")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+BACKEND_URL = os.getenv("BASE_API_URL", "")
+GITHUB_REDIRECT_URI = os.getenv("GITHUB_REDIRECT_URI", "")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "")
 
 
 # RAZORPAY Configuration
-RAZORPAY_API_KEY = os.getenv("RAZORPAY_API_KEY")
-RAZORPAY_SECRET_KEY = os.getenv("RAZORPAY_SECRET_KEY")
+RAZORPAY_API_KEY = os.getenv("RAZORPAY_API_KEY", "")
+RAZORPAY_SECRET_KEY = os.getenv("RAZORPAY_SECRET_KEY", "")
