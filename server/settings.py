@@ -151,7 +151,7 @@ EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-COMPANY_NAME = "Z-Tube"
+COMPANY_NAME = "Coursera"
 
 # Process Configuration
 SEND_ACTIVATION_EMAIL = True

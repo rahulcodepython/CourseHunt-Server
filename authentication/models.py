@@ -91,6 +91,10 @@ class ResetEmailCode(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     purchased_courses = models.ManyToManyField("course.Course", blank=True)
+    country = models.CharField(max_length=1000, blank=True, null=True)
+    city = models.CharField(max_length=1000, blank=True, null=True)
+    address = models.CharField(max_length=1000, blank=True, null=True)
+    phone = models.CharField(max_length=1000, blank=True, null=True)
 
     class Meta:
         verbose_name = "Profile"

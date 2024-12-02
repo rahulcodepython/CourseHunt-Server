@@ -30,14 +30,12 @@ urlpatterns = [
         name="detail-single-course",
     ),
     path(
-        "purchase-course/<str:course_id>/",
-        views.PurchaseCourseView.as_view(),
-        name="purchase-course",
-    ),
-    path(
         "delete-course/<str:course_id>/",
         views.DeleteCourseView.as_view(),
         name="delete-course",
+    ),
+    path(
+        "checkout/<str:course_id>/", views.CourseCheckoutView.as_view(), name="checkout"
     ),
     path(
         "payment/initiate/<str:course_id>/",

@@ -4,7 +4,7 @@ from . import models
 
 @admin.register(models.Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ("id", "price", "duration", "created_at")
+    list_display = ("id", "name", "price", "duration", "created_at")
 
 
 @admin.register(models.Purchase)

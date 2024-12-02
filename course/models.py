@@ -9,7 +9,7 @@ class Course(models.Model):
     short_description = models.TextField(default="", null=True, blank=True)
     long_description = models.TextField(default="", null=True, blank=True)
     price = models.IntegerField(default=0)
-    offer = models.IntegerField(default=0)
+    offer = models.FloatField(default=0.0)
     duration = models.CharField(default="", null=True, blank=True)
     thumbnail = models.CharField(max_length=120, default="", null=True, blank=True)
     status = models.CharField(

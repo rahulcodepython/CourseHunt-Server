@@ -3,7 +3,6 @@ from django.core.paginator import Paginator
 from . import serializers, models
 import razorpay
 from django.conf import settings
-from .serializers import OrderSerializer
 from django.shortcuts import get_object_or_404
 
 razorpay_client = razorpay.Client(
@@ -156,24 +155,6 @@ class DetailSingleCourseView(views.APIView):
             return response.Response(res["body"], status=res["status"])
 
 
-class PurchaseCourseView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, course_id):
-        try:
-            course = models.Course.objects.get(id=course_id)
-            user = request.user
-
-            user.profile.purchased_courses.add(course)
-            user.profile.save()
-
-            return response.Response({"id": course_id}, status=status.HTTP_201_CREATED)
-
-        except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
-
-
 class DeleteCourseView(views.APIView):
     permission_classes = [permissions.IsAdminUser]
 
@@ -189,44 +170,103 @@ class DeleteCourseView(views.APIView):
             return response.Response(res["body"], status=res["status"])
 
 
+class CourseCheckoutView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, course_id):
+        try:
+            if not models.Course.objects.filter(id=course_id).exists():
+                res = Message.error("Course not found")
+                return response.Response(res["body"], status=res["status"])
+
+            course = models.Course.objects.get(id=course_id)
+            user = request.user
+            profile = user.profile
+
+            price = course.price
+            tax = 0.18 * price
+            total = price + tax
+            total = total - (course.offer / 100 * total)
+
+            return response.Response(
+                {
+                    "price": price,
+                    "tax": tax,
+                    "offer": course.offer,
+                    "total": total,
+                    "name": user.first_name + " " + user.last_name,
+                    "email": user.email,
+                    "country": profile.country,
+                    "city": profile.city,
+                    "phone": profile.phone,
+                    "address": profile.address,
+                }
+            )
+
+        except Exception as e:
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
+
+
 class InitiatePayment(views.APIView):
     def get(self, request, course_id):
-        course = get_object_or_404(models.Course, id=course_id)
-        user = request.user
-        amount = int(course.price * 100)  # Razorpay amount is in paisa
+        try:
+            if not models.Course.objects.filter(id=course_id).exists():
+                res = Message.error("Course not found")
+                return response.Response(res["body"], status=res["status"])
 
-        # Create a Razorpay Order
-        razorpay_order = razorpay_client.order.create(
-            {"amount": amount, "currency": "INR", "payment_capture": "1"}
-        )
+            course = models.Course.objects.get(id=course_id)
+            user = request.user
 
-        # Create an Order in our DB
-        models.Purchase.objects.create(
-            course=course,
-            user=user,
-            amount=course.price,
-            razorpay_order_id=razorpay_order["id"],
-        )
+            if course in user.profile.purchased_courses.all():
+                res = Message.error("Course already purchased")
+                return response.Response(res["body"], status=res["status"])
 
-        return response.Response(
-            {
-                "order_id": razorpay_order["id"],
-                "amount": amount,
-                "currency": "INR",
-            },
-            status=status.HTTP_201_CREATED,
-        )
+            amount = int(course.price * 100)  # Razorpay amount is in paisa
+            # Create a Razorpay Order
+            razorpay_order = razorpay_client.order.create(
+                {"amount": amount, "currency": "INR", "payment_capture": "1"}
+            )
+            # Create an Order in our DB
+            if not models.Purchase.objects.filter(
+                razorpay_order_id=razorpay_order["id"],
+                course=course,
+                user=user,
+            ).exists():
+                models.Purchase.objects.create(
+                    course=course,
+                    user=user,
+                    amount=course.price,
+                    razorpay_order_id=razorpay_order["id"],
+                )
+            return response.Response(
+                {
+                    "order_id": razorpay_order["id"],
+                    "amount": amount,
+                    "currency": "INR",
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        except Exception as e:
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
 
 
 class VerifyPayment(views.APIView):
     def post(self, request):
-        data = request.data
-        purchase = get_object_or_404(
-            models.Purchase, razorpay_order_id=data["razorpay_order_id"]
-        )
-
-        # Verify Razorpay Signature
         try:
+            data = request.data
+            if not models.Purchase.objects.filter(
+                razorpay_order_id=data["razorpay_order_id"]
+            ).exists():
+                return response.Response(
+                    {"status": "Order not found"}, status=status.HTTP_404_NOT_FOUND
+                )
+            purchase = models.Purchase.objects.get(
+                razorpay_order_id=data["razorpay_order_id"]
+            )
+
             razorpay_client.utility.verify_payment_signature(data)
             purchase.is_paid = True
             purchase.razorpay_payment_id = data["razorpay_payment_id"]
