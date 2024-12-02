@@ -33,4 +33,5 @@ urlpatterns = [
         views.google_authenticate.as_view(),
         name="google_authenticate",
     ),
+    path("users/alluser/", views.ListAllUser.as_view()),
 ]

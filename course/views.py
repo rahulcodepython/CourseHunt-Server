@@ -74,7 +74,7 @@ class AdminListCoursesView(views.APIView):
             # page = request.GET.get("page")
             # courses = paginator.get_page(page)
 
-            serializer = serializers.ListCoursesSerializer(courses, many=True)
+            serializer = serializers.ListCoursesDashboardSerializer(courses, many=True)
 
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -94,7 +94,7 @@ class PurchasedListCoursesView(views.APIView):
             # page = request.GET.get("page")
             # courses = paginator.get_page(page)
 
-            serializer = serializers.ListCoursesSerializer(courses, many=True)
+            serializer = serializers.ListCoursesDashboardSerializer(courses, many=True)
 
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -126,13 +126,13 @@ class EditCourseView(views.APIView):
             return response.Response(res["body"], status=res["status"])
 
 
-class SingleCourseView(views.APIView):
+class StudySingleCourseView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, course_id):
         try:
             course = models.Course.objects.get(id=course_id)
-            serializer = serializers.CreateCourseSerializer(course)
+            serializer = serializers.StudySingleCourseSerializer(course)
 
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 

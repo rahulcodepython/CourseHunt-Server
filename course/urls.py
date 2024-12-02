@@ -20,8 +20,8 @@ urlpatterns = [
         name="edit-course",
     ),
     path(
-        "single-course/<str:course_id>/",
-        views.SingleCourseView.as_view(),
+        "study-single-course/<str:course_id>/",
+        views.StudySingleCourseView.as_view(),
         name="single-course",
     ),
     path(
