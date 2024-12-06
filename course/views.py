@@ -45,8 +45,6 @@ class CreateCourseView(views.APIView):
 
 
 class ListCoursesView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
     def get(self, request):
         try:
             courses = models.Course.objects.all().filter(status="published")
@@ -141,8 +139,6 @@ class StudySingleCourseView(views.APIView):
 
 
 class DetailSingleCourseView(views.APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
     def get(self, request, course_id):
         try:
             course = models.Course.objects.get(id=course_id)
