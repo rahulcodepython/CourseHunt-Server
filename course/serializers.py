@@ -2,10 +2,15 @@ from rest_framework import serializers
 from . import models
 
 
-class CreateCourseSerializer(serializers.ModelSerializer):
+class BaseCourseSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateField(format="%b %d %Y")  # Common field
+
     class Meta:
-        model = models.Course
-        fields = "__all__"
+        model = models.Course  # Common model reference
+
+
+class CreateCourseSerializer(BaseCourseSerializer):
+    class Meta(BaseCourseSerializer.Meta): ...
 
     def create(self, validated_data):
         return super().create(validated_data)
@@ -14,9 +19,8 @@ class CreateCourseSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 
-class StudySingleCourseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Course
+class StudySingleCourseSerializer(BaseCourseSerializer):
+    class Meta(BaseCourseSerializer.Meta):
         exclude = [
             "status",
             "short_description",
@@ -29,9 +33,8 @@ class StudySingleCourseSerializer(serializers.ModelSerializer):
         ]
 
 
-class DetailSingleCourseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Course
+class DetailSingleCourseSerializer(BaseCourseSerializer):
+    class Meta(BaseCourseSerializer.Meta):
         exclude = [
             "status",
             "videoURL",
@@ -42,9 +45,8 @@ class DetailSingleCourseSerializer(serializers.ModelSerializer):
         ]
 
 
-class ListCoursesDashboardSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Course
+class ListCoursesDashboardSerializer(BaseCourseSerializer):
+    class Meta(BaseCourseSerializer.Meta):
         fields = [
             "id",
             "name",
@@ -55,9 +57,8 @@ class ListCoursesDashboardSerializer(serializers.ModelSerializer):
         ]
 
 
-class ListCoursesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Course
+class ListCoursesSerializer(BaseCourseSerializer):
+    class Meta(BaseCourseSerializer.Meta):
         exclude = [
             "long_description",
             "status",
@@ -73,3 +74,25 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Purchase
         fields = "__all__"
+
+
+class BaseCouponSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateField(format="%b %d %Y")  # Common field
+
+    class Meta:
+        model = models.CuponeCode
+        fields = "__all__"
+
+
+class CreateCouponSerializer(serializers.ModelSerializer):
+    class Meta(BaseCouponSerializer.Meta): ...
+
+    def create(self, validated_data):
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)
+
+
+class ListCouponSerializer(BaseCouponSerializer):
+    class Meta(BaseCouponSerializer.Meta): ...

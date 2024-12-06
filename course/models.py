@@ -27,7 +27,7 @@ class Course(models.Model):
     )
     codeURL = models.CharField(default="", max_length=120, blank=True, null=True)
     content = models.TextField(default="", null=True, blank=True)
-    created_at = models.CharField(max_length=50)
+    created_at = models.DateField(auto_now_add=True)
 
     def __str__(self):
         return self.id
@@ -47,4 +47,18 @@ class Purchase(models.Model):
     razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
     razorpay_signature = models.CharField(max_length=100, blank=True, null=True)
     is_paid = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateField(auto_now_add=True)
+
+
+class CuponeCode(models.Model):
+    code = models.CharField(max_length=10, unique=True)
+    discount = models.IntegerField()
+    expiry = models.DateField()
+    created_at = models.DateField(auto_now_add=True)
+    quantity = models.IntegerField(null=True, blank=True)
+    used = models.IntegerField(default=0)
+    is_unlimited = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.code

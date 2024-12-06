@@ -209,7 +209,7 @@ class CourseCheckoutView(views.APIView):
 
 
 class InitiatePayment(views.APIView):
-    def get(self, request, course_id):
+    def post(self, request, course_id):
         try:
             if not models.Course.objects.filter(id=course_id).exists():
                 res = Message.error("Course not found")
@@ -222,7 +222,7 @@ class InitiatePayment(views.APIView):
                 res = Message.error("Course already purchased")
                 return response.Response(res["body"], status=res["status"])
 
-            amount = int(course.price * 100)  # Razorpay amount is in paisa
+            amount = int(request.data["amount"] * 100)  # Razorpay amount is in paisa
             # Create a Razorpay Order
             razorpay_order = razorpay_client.order.create(
                 {"amount": amount, "currency": "INR", "payment_capture": "1"}
@@ -284,3 +284,80 @@ class VerifyPayment(views.APIView):
             return response.Response(
                 {"status": "Payment failed"}, status=status.HTTP_400_BAD_REQUEST
             )
+
+
+class CreateCouponView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request):
+        try:
+            serializer = serializers.CreateCouponSerializer(data=request.data)
+
+            if not serializer.is_valid():
+                res = Message.error(serializer.errors)
+                return response.Response(res["body"], status=res["status"])
+
+            serializer.save()
+
+            return response.Response(
+                {"msg": "Coupne is created."}, status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            print(e)
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
+
+
+class EditCouponView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, id):
+        try:
+            coupon = get_object_or_404(models.CuponeCode, id=id)
+            serializer = serializers.CreateCouponSerializer(coupon, data=request.data)
+
+            if not serializer.is_valid():
+                res = Message.error(serializer.errors)
+                return response.Response(res["body"], status=res["status"])
+
+            serializer.save()
+
+            return response.Response(
+                {"msg": "Coupne is updated."}, status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            print(e)
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
+
+    def delete(self, request, id):
+        try:
+            coupon = get_object_or_404(models.CuponeCode, id=id)
+            coupon.delete()
+
+            return response.Response(
+                {"msg": "Coupne is deleted."}, status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            print(e)
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
+
+
+class ListCouponView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        try:
+            coupons = models.CuponeCode.objects.all()
+            serializer = serializers.ListCouponSerializer(coupons, many=True)
+
+            return response.Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print(e)
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])

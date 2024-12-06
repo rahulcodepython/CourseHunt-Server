@@ -43,4 +43,9 @@ urlpatterns = [
         name="initiate-payment",
     ),
     path("payment/verify/", views.VerifyPayment.as_view(), name="verify-payment"),
+    path("create-coupon-code/", views.CreateCouponView.as_view(), name="create-coupon"),
+    path("list-coupon-code/", views.ListCouponView.as_view(), name="list-coupon"),
+    path(
+        "edit-coupon-code/<int:id>/", views.EditCouponView.as_view(), name="edit-coupon"
+    ),
 ]

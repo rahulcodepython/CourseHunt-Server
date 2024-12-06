@@ -117,6 +117,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
+# DATE_INPUT_FORMATS = ["%d-%m-%Y"]
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 USE_I18N = True
