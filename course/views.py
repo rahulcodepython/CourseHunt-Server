@@ -40,6 +40,7 @@ class CreateCourseView(views.APIView):
             serializer = serializers.CreateCourseSerializer(data=request.data)
 
             if not serializer.is_valid():
+                print(serializer.errors)
                 res = Message.error(serializer.errors)
                 return response.Response(res["body"], status=res["status"])
 
@@ -48,6 +49,7 @@ class CreateCourseView(views.APIView):
             return response.Response({"id": course.id}, status=status.HTTP_201_CREATED)
 
         except Exception as e:
+            print(e)
             res = Message.warn(str(e))
             return response.Response(res["body"], status=res["status"])
 
@@ -60,13 +62,19 @@ class ListCoursesView(views.APIView):
             # page = request.GET.get("page")
             # courses = paginator.get_page(page)
 
-            serializer = serializers.ListCoursesSerializer(
-                courses, many=True, context={"user": request.user}
-            )
+            if request.user.is_authenticated:
+                serializer = serializers.ListCoursesSerializer(
+                    courses, many=True, context={"user": request.user}
+                )
+            else:
+                serializer = serializers.ListCoursesSerializer(
+                    courses, many=True, context={"user": None}
+                )
 
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
+            print(e)
             res = Message.warn(str(e))
             return response.Response(res["body"], status=res["status"])
 
@@ -81,7 +89,9 @@ class AdminListCoursesView(views.APIView):
             # page = request.GET.get("page")
             # courses = paginator.get_page(page)
 
-            serializer = serializers.ListCoursesDashboardSerializer(courses, many=True)
+            serializer = serializers.ListCoursesAdminDashboardSerializer(
+                courses, many=True
+            )
 
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -95,8 +105,9 @@ class PurchasedListCoursesView(views.APIView):
 
     def get(self, request):
         try:
-            course = get_object_or_404(models.Profile, user=request.user)
-            courses = course.purchased_courses.all()
+            profile = get_object_or_404(Profile, user=request.user)
+            courses = profile.purchased_courses.all()
+
             # paginator = Paginator(courses, 10)
             # page = request.GET.get("page")
             # courses = paginator.get_page(page)
@@ -106,12 +117,24 @@ class PurchasedListCoursesView(views.APIView):
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
+            print(e)
             res = Message.warn(str(e))
             return response.Response(res["body"], status=res["status"])
 
 
 class EditCourseView(views.APIView):
     permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request, course_id):
+        try:
+            course = models.Course.objects.get(id=course_id)
+            serializer = serializers.CreateCourseSerializer(course)
+
+            return response.Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
 
     def patch(self, request, course_id):
         try:
@@ -125,6 +148,38 @@ class EditCourseView(views.APIView):
                 return response.Response(res["body"], status=res["status"])
 
             serializer.save()
+
+            return response.Response({"id": course_id}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
+
+    def delete(self, request, course_id):
+        try:
+            course = models.Course.objects.get(id=course_id)
+            course.delete()
+
+            return response.Response({"id": course_id}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
+
+
+class ToggleCourseStatusView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, course_id):
+        try:
+            course = models.Course.objects.get(id=course_id)
+
+            if course.status == "draft":
+                course.status = "published"
+            else:
+                course.status = "draft"
+
+            course.save()
 
             return response.Response({"id": course_id}, status=status.HTTP_200_OK)
 
@@ -159,28 +214,20 @@ class DetailSingleCourseView(views.APIView):
     def get(self, request, course_id):
         try:
             course = models.Course.objects.get(id=course_id)
-            serializer = serializers.DetailSingleCourseSerializer(
-                course, context={"user": request.user}
-            )
+
+            if request.user.is_authenticated:
+                serializer = serializers.DetailSingleCourseSerializer(
+                    course, context={"user": request.user}
+                )
+            else:
+                serializer = serializers.DetailSingleCourseSerializer(
+                    course, context={"user": None}
+                )
 
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
-
-
-class DeleteCourseView(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
-
-    def delete(self, request, course_id):
-        try:
-            course = models.Course.objects.get(id=course_id)
-            course.delete()
-
-            return response.Response({"id": course_id}, status=status.HTTP_200_OK)
-
-        except Exception as e:
+            print(e)
             res = Message.warn(str(e))
             return response.Response(res["body"], status=res["status"])
 

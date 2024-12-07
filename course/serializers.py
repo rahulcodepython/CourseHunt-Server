@@ -4,14 +4,17 @@ from authentication.models import Profile
 
 
 class BaseCourseSerializer(serializers.ModelSerializer):
-    created_at = serializers.DateField(format="%b %d %Y")  # Common field
+    created_at = serializers.DateField(
+        format="%b %d %Y", read_only=True
+    )  # Common field
 
     class Meta:
         model = models.Course  # Common model reference
 
 
 class CreateCourseSerializer(BaseCourseSerializer):
-    class Meta(BaseCourseSerializer.Meta): ...
+    class Meta(BaseCourseSerializer.Meta):
+        fields = "__all__"
 
     def create(self, validated_data):
         return super().create(validated_data)
@@ -49,7 +52,7 @@ class DetailSingleCourseSerializer(BaseCourseSerializer):
     def get_enrolled(self, obj):
         user = self.context.get("user")
 
-        if user.is_anonymous:
+        if user is None:
             return False
 
         profile = Profile.objects.get(user=user)
@@ -57,6 +60,14 @@ class DetailSingleCourseSerializer(BaseCourseSerializer):
 
 
 class ListCoursesDashboardSerializer(BaseCourseSerializer):
+    class Meta(BaseCourseSerializer.Meta):
+        fields = [
+            "id",
+            "name",
+        ]
+
+
+class ListCoursesAdminDashboardSerializer(BaseCourseSerializer):
     class Meta(BaseCourseSerializer.Meta):
         fields = [
             "id",
@@ -85,7 +96,7 @@ class ListCoursesSerializer(BaseCourseSerializer):
     def get_enrolled(self, obj):
         user = self.context.get("user")
 
-        if user.is_anonymous:
+        if user is None:
             return False
 
         profile = Profile.objects.get(user=user)
@@ -99,7 +110,10 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class BaseCouponSerializer(serializers.ModelSerializer):
-    created_at = serializers.DateField(format="%b %d %Y")  # Common field
+    created_at = serializers.DateField(
+        format="%b %d %Y", read_only=True
+    )  # Common field
+    expiry = serializers.DateField(format="%b %d %Y")  # Common field
 
     class Meta:
         model = models.CuponeCode
