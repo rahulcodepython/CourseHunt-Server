@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from . import models
+from authentication.models import Profile
 
 
 class BaseCourseSerializer(serializers.ModelSerializer):
@@ -29,11 +30,12 @@ class StudySingleCourseSerializer(BaseCourseSerializer):
             "offer",
             "duration",
             "thumbnail",
-            "created_at",
         ]
 
 
 class DetailSingleCourseSerializer(BaseCourseSerializer):
+    enrolled = serializers.SerializerMethodField()
+
     class Meta(BaseCourseSerializer.Meta):
         exclude = [
             "status",
@@ -43,6 +45,15 @@ class DetailSingleCourseSerializer(BaseCourseSerializer):
             "codeURL",
             "content",
         ]
+
+    def get_enrolled(self, obj):
+        user = self.context.get("user")
+
+        if user.is_anonymous:
+            return False
+
+        profile = Profile.objects.get(user=user)
+        return obj in profile.purchased_courses.all()
 
 
 class ListCoursesDashboardSerializer(BaseCourseSerializer):
@@ -58,6 +69,8 @@ class ListCoursesDashboardSerializer(BaseCourseSerializer):
 
 
 class ListCoursesSerializer(BaseCourseSerializer):
+    enrolled = serializers.SerializerMethodField()
+
     class Meta(BaseCourseSerializer.Meta):
         exclude = [
             "long_description",
@@ -68,6 +81,15 @@ class ListCoursesSerializer(BaseCourseSerializer):
             "codeURL",
             "content",
         ]
+
+    def get_enrolled(self, obj):
+        user = self.context.get("user")
+
+        if user.is_anonymous:
+            return False
+
+        profile = Profile.objects.get(user=user)
+        return obj in profile.purchased_courses.all()
 
 
 class OrderSerializer(serializers.ModelSerializer):

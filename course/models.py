@@ -40,6 +40,7 @@ class Course(models.Model):
 
 
 class Purchase(models.Model):
+    id = models.CharField(primary_key=True, unique=True, max_length=120, editable=False)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -49,8 +50,15 @@ class Purchase(models.Model):
     is_paid = models.BooleanField(default=False)
     created_at = models.DateField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = str(uuid.uuid4())
+
+        super(Purchase, self).save(*args, **kwargs)
+
 
 class CuponeCode(models.Model):
+    id = models.CharField(primary_key=True, unique=True, max_length=120, editable=False)
     code = models.CharField(max_length=10, unique=True)
     discount = models.IntegerField()
     expiry = models.DateField()
@@ -62,3 +70,9 @@ class CuponeCode(models.Model):
 
     def __str__(self):
         return self.code
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = str(uuid.uuid4())
+
+        super(CuponeCode, self).save(*args, **kwargs)

@@ -4,10 +4,18 @@ from . import serializers, models
 import razorpay
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from authentication.models import Profile
 
 razorpay_client = razorpay.Client(
     auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_SECRET_KEY)
 )
+
+
+def calculateCoursePrice(price: int, offer: float) -> float:
+    tax = 0.18 * price
+    total = price + tax
+    total = total - (offer / 100 * total)
+    return total
 
 
 class Message:
@@ -52,7 +60,9 @@ class ListCoursesView(views.APIView):
             # page = request.GET.get("page")
             # courses = paginator.get_page(page)
 
-            serializer = serializers.ListCoursesSerializer(courses, many=True)
+            serializer = serializers.ListCoursesSerializer(
+                courses, many=True, context={"user": request.user}
+            )
 
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -85,8 +95,8 @@ class PurchasedListCoursesView(views.APIView):
 
     def get(self, request):
         try:
-            user = request.user
-            courses = user.profile.purchased_courses.all()
+            course = get_object_or_404(models.Profile, user=request.user)
+            courses = course.purchased_courses.all()
             # paginator = Paginator(courses, 10)
             # page = request.GET.get("page")
             # courses = paginator.get_page(page)
@@ -128,12 +138,19 @@ class StudySingleCourseView(views.APIView):
 
     def get(self, request, course_id):
         try:
+            profile = Profile.objects.get(user=request.user)
             course = models.Course.objects.get(id=course_id)
+
+            if course not in profile.purchased_courses.all():
+                res = Message.error("Course not purchased")
+                return response.Response(res["body"], status=res["status"])
+
             serializer = serializers.StudySingleCourseSerializer(course)
 
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
+            print(e)
             res = Message.warn(str(e))
             return response.Response(res["body"], status=res["status"])
 
@@ -142,7 +159,9 @@ class DetailSingleCourseView(views.APIView):
     def get(self, request, course_id):
         try:
             course = models.Course.objects.get(id=course_id)
-            serializer = serializers.DetailSingleCourseSerializer(course)
+            serializer = serializers.DetailSingleCourseSerializer(
+                course, context={"user": request.user}
+            )
 
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -180,9 +199,8 @@ class CourseCheckoutView(views.APIView):
             profile = user.profile
 
             price = course.price
+            total = calculateCoursePrice(price, course.offer)
             tax = 0.18 * price
-            total = price + tax
-            total = total - (course.offer / 100 * total)
 
             return response.Response(
                 {
@@ -218,7 +236,9 @@ class InitiatePayment(views.APIView):
                 res = Message.error("Course already purchased")
                 return response.Response(res["body"], status=res["status"])
 
-            amount = int(request.data["amount"] * 100)  # Razorpay amount is in paisa
+            amount = int(
+                calculateCoursePrice(course.price, course.offer) * 100
+            )  # Razorpay amount is in paisa
             # Create a Razorpay Order
             razorpay_order = razorpay_client.order.create(
                 {"amount": amount, "currency": "INR", "payment_capture": "1"}
