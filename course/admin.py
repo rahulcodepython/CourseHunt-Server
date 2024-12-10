@@ -29,6 +29,7 @@ class CuponeCodeAdmin(admin.ModelAdmin):
         "discount",
         "expiry",
         "quantity",
+        "used",
         "is_unlimited",
         "is_active",
     )
