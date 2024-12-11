@@ -1,8 +1,8 @@
-from datetime import timedelta
+from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
+from datetime import timedelta
 from pathlib import Path
 import os
-from django.core.management.utils import get_random_secret_key
 
 # Load environment variables
 load_dotenv()
@@ -22,7 +22,7 @@ DEBUG = True if os.getenv("DEBUG", "False") == "True" else False
 ALLOWED_HOSTS = ["*"]
 
 # api/settings.py
-WSGI_APPLICATION = "backend.wsgi.app"
+WSGI_APPLICATION = "server.wsgi.app"
 
 # Application definition
 INSTALLED_APPS = [

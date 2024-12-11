@@ -2,7 +2,6 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.conf import settings
-import random
 
 User = get_user_model()
 
@@ -10,7 +9,14 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ("username", "first_name", "last_name", "image", "email", "is_superuser")
+        fields = (
+            "username",
+            "first_name",
+            "last_name",
+            "image",
+            "email",
+            "is_superuser",
+        )
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -22,7 +28,11 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = list(User.REQUIRED_FIELDS) + [settings.AUTH_CONFIG['LOGIN_FIELD'], "password", "email"]
+        fields = list(User.REQUIRED_FIELDS) + [
+            settings.AUTH_CONFIG["LOGIN_FIELD"],
+            "password",
+            "email",
+        ]
 
     def create(self, validated_data):
         user = super().create(validated_data)
@@ -37,7 +47,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'image']
+        fields = ["username", "first_name", "last_name", "image"]
 
     def update(self, instance, validated_data):
         return super().update(instance, validated_data)
