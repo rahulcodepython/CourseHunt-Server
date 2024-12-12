@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "authentication",
     "course",
     "feedback",
+    "transactions",
     # Third party packages
     "rest_framework",
     "corsheaders",

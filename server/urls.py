@@ -10,4 +10,5 @@ urlpatterns = [
     path("auth/", include("authentication.urls")),
     path("course/", include("course.urls")),
     path("feedback/", include("feedback.urls")),
+    path("transactions/", include("transactions.urls")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
