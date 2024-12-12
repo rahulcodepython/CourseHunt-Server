@@ -71,7 +71,7 @@ class CourseCheckoutView(views.APIView):
             return response.Response(res["body"], status=res["status"])
 
 
-class InitiatePayment(views.APIView):
+class InitiatePaymentView(views.APIView):
     def post(self, request, course_id):
         try:
             if not models.Course.objects.filter(id=course_id).exists():
@@ -113,7 +113,7 @@ class InitiatePayment(views.APIView):
                 models.Purchase.objects.create(
                     course=course,
                     user=user,
-                    amount=amount,
+                    amount=total,
                     razorpay_order_id=razorpay_order["id"],
                 )
             return response.Response(
@@ -130,7 +130,7 @@ class InitiatePayment(views.APIView):
             return response.Response(res["body"], status=res["status"])
 
 
-class VerifyPayment(views.APIView):
+class VerifyPaymentView(views.APIView):
     def post(self, request):
         try:
             data = request.data
@@ -170,7 +170,7 @@ class VerifyPayment(views.APIView):
             )
 
 
-class CancelPayment(views.APIView):
+class CancelPaymentView(views.APIView):
     def post(self, request):
         try:
             data = request.data
@@ -265,7 +265,7 @@ class ListCouponView(views.APIView):
             return response.Response(res["body"], status=res["status"])
 
 
-class ApplyCoupon(views.APIView):
+class ApplyCouponView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, course_id):
@@ -308,5 +308,37 @@ class ApplyCoupon(views.APIView):
 
         except Exception as e:
             print(e)
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
+
+
+class ListTransactionsView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        try:
+            purchases = models.Purchase.objects.all()
+            # paginator = Paginator(purchases, 10)
+            # page = request.GET.get("page")
+            # purchases = paginator.get_page(page)
+            serializer = serializers.ListTransactionSerializer(purchases, many=True)
+            return response.Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            res = Message.warn(str(e))
+            return response.Response(res["body"], status=res["status"])
+
+
+class ListSelfTransactionsView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        try:
+            purchases = models.Purchase.objects.filter(user=request.user)
+            # paginator = Paginator(purchases, 10)
+            # page = request.GET.get("page")
+            # purchases = paginator.get_page(page)
+            serializer = serializers.ListTransactionSerializer(purchases, many=True)
+            return response.Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
             res = Message.warn(str(e))
             return response.Response(res["body"], status=res["status"])

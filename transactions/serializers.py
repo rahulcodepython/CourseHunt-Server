@@ -25,3 +25,25 @@ class CreateCouponSerializer(serializers.ModelSerializer):
 
 class ListCouponSerializer(BaseCouponSerializer):
     class Meta(BaseCouponSerializer.Meta): ...
+
+
+class ListTransactionSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateField(
+        format="%b %d %Y", read_only=True
+    )  # Common field
+    course = serializers.SerializerMethodField()
+
+    class Meta:
+        model = models.Purchase
+        fields = [
+            "id",
+            "course",
+            "user",
+            "amount",
+            "razorpay_order_id",
+            "is_paid",
+            "created_at",
+        ]
+
+    def get_course(self, obj):
+        return obj.course.name

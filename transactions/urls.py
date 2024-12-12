@@ -7,11 +7,11 @@ urlpatterns = [
     ),
     path(
         "payment/initiate/<str:course_id>/",
-        views.InitiatePayment.as_view(),
+        views.InitiatePaymentView.as_view(),
         name="initiate-payment",
     ),
-    path("payment/verify/", views.VerifyPayment.as_view(), name="verify-payment"),
-    path("payment/cancel/", views.CancelPayment.as_view(), name="payment-cancel"),
+    path("payment/verify/", views.VerifyPaymentView.as_view(), name="verify-payment"),
+    path("payment/cancel/", views.CancelPaymentView.as_view(), name="payment-cancel"),
     path("create-coupon-code/", views.CreateCouponView.as_view(), name="create-coupon"),
     path("list-coupon-code/", views.ListCouponView.as_view(), name="list-coupon"),
     path(
@@ -19,7 +19,17 @@ urlpatterns = [
     ),
     path(
         "apply-coupon-code/<str:course_id>/",
-        views.ApplyCoupon.as_view(),
+        views.ApplyCouponView.as_view(),
         name="apply-coupon",
+    ),
+    path(
+        "list-transactions/",
+        views.ListTransactionsView.as_view(),
+        name="list-transactions",
+    ),
+    path(
+        "list-self-transactions/",
+        views.ListSelfTransactionsView.as_view(),
+        name="list-transactions",
     ),
 ]
