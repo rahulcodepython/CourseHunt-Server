@@ -11,16 +11,16 @@ User = get_user_model()
 
 class Message:
     def warn(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_406_NOT_ACCEPTABLE}
+        return response.Response({"error": msg}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def error(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_400_BAD_REQUEST}
+        return response.Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
     def success(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_200_OK}
+        return response.Response({"success": msg}, status=status.HTTP_200_OK)
 
     def create(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_201_CREATED}
+        return response.Response({"success": msg}, status=status.HTTP_201_CREATED)
 
 
 def get_tokens_for_user(user):
@@ -65,27 +65,23 @@ class UserViews(views.APIView):
     def get(self, request):
         try:
             if not check_authenticated_user(request.user):
-                res = Message.error(msg="You are not authenticated yet. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You are not authenticated yet. Try again.")
 
             serialized_data = serializers.UserSerializer(request.user)
             return response.Response(serialized_data.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
     def post(self, request):
         try:
             if check_email_exists(request.data["email"]):
                 if not check_user_active(request.data["email"]):
-                    res = Message.warn(
+                    return Message.warn(
                         msg="You have already registered. But not verified you email yet. Please verify it first."
                     )
-                    return response.Response(res["body"], status=res["status"])
 
-                res = Message.warn(msg="You have already registered.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.warn(msg="You have already registered.")
 
             serialized_data = serializers.UserCreateSerializer(
                 data={
@@ -95,10 +91,7 @@ class UserViews(views.APIView):
             )
 
             if not serialized_data.is_valid():
-                res = Message.error(
-                    "There is some issue. User is not created. Try again."
-                )
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="Your data is not valid. Try again.")
 
             user = serialized_data.save()
 
@@ -112,51 +105,45 @@ class UserViews(views.APIView):
                 username=user.username,
             )
 
-            res = Message.create(
+            return Message.create(
                 msg="Your account has been creates. At First verify it."
             )
-            return response.Response(res["body"], status=res["status"])
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
     def patch(self, request):
         try:
             if not check_authenticated_user(request.user):
-                res = Message.error(msg="You are not authenticated yet. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You are not authenticated yet. Try again.")
 
             serialized_data = serializers.UserUpdateSerializer(
                 request.user, data=request.data, partial=True
             )
 
             if not serialized_data.is_valid():
-                res = Message.error(msg="Your data is not valid. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="Your data is not valid. Try again.")
 
             serialized_data.save()
 
-            res = Message.create(msg="Your data is updated.")
-            return response.Response(res["body"], status=res["status"])
+            return response.Response(
+                serializers.UserSerializer(request.user).data, status=status.HTTP_200_OK
+            )
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
     def delete(self, request):
         try:
             if not check_authenticated_user(request.user):
-                res = Message.error(msg="You are not authenticated yet. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You are not authenticated yet. Try again.")
 
             request.user.delete()
-            res = Message.success(msg="Your account is deleted.")
-            return response.Response(res["body"], status=res["status"])
+
+            return Message.success(msg="Your account has been deleted.")
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
 
 class ActivateUserViews(views.APIView):
@@ -171,8 +158,7 @@ class ActivateUserViews(views.APIView):
             )
 
             if user is None:
-                res = Message.error(msg="You have entered wrong code. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You have entered wrong code. Try again.")
 
             user.is_active = True
             user.save()
@@ -187,8 +173,7 @@ class ActivateUserViews(views.APIView):
             )
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
 
 class ResendActivateUserViews(views.APIView):
@@ -209,14 +194,14 @@ class ResendActivateUserViews(views.APIView):
             user_email = request.data["email"]
 
             if not check_email_exists(user_email):
-                res = Message.error(msg="No such user is there. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="No such user is there. Try again.")
 
             user = User.objects.get(email=user_email)
 
             if check_user_active(user_email):
-                res = Message.error(msg="You are already verified.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.warn(
+                    msg="You have already registered. But not verified you email yet. Please verify it first."
+                )
 
             if models.ActivationCode.objects.filter(user=user).exists():
                 models.ActivationCode.objects.get(user=user).delete()
@@ -232,12 +217,10 @@ class ResendActivateUserViews(views.APIView):
                 username=user.username,
             )
 
-            res = Message.success(msg="Activation link has been sent to your email.")
-            return response.Response(res["body"], status=res["status"])
+            return Message.success(msg="Activation link is sent to your mail.")
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
 
 class CreateJWT(views.APIView):
@@ -247,22 +230,21 @@ class CreateJWT(views.APIView):
             password = request.data["password"]
 
             if not User.objects.filter(email=email).exists():
-                res = Message.error(msg="No such user is there. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="No such user is there. Try again.")
 
             username = User.objects.get(email=email).username
 
             user = authenticate(username=username, password=password)
 
             if user is None:
-                res = Message.error(
-                    msg="You are not authenticated properly. Try again."
+                return Message.error(
+                    msg="Your email or password is not correct. Try again."
                 )
-                return response.Response(res["body"], status=res["status"])
 
             if not user.is_active:
-                res = Message.error(msg="You are not verified yet. Verify first.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.warn(
+                    msg="You have already registered. But not verified you email yet. Please verify it first."
+                )
 
             return response.Response(
                 {
@@ -271,10 +253,8 @@ class CreateJWT(views.APIView):
                 },
                 status=status.HTTP_200_OK,
             )
-
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
 
 class TokenRefreshView(views.APIView):
@@ -283,8 +263,7 @@ class TokenRefreshView(views.APIView):
             refresh = request.data.get("refresh")
 
             if refresh is None:
-                res = Message.error(msg="No refresh token provided.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="No refresh token is provided. Try again.")
 
             token = RefreshToken(refresh)
 
@@ -300,8 +279,7 @@ class TokenRefreshView(views.APIView):
             )
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
 
 class ResetUserPassword(views.APIView):
@@ -320,8 +298,7 @@ class ResetUserPassword(views.APIView):
     def get(self, request):
         try:
             if not check_authenticated_user(request.user):
-                res = Message.error(msg="You are not authenticated yet. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You are not authenticated yet. Try again.")
 
             if models.ResetPasswordCode.objects.filter(user=request.user).exists():
                 models.ResetPasswordCode.objects.get(user=request.user).delete()
@@ -336,18 +313,15 @@ class ResetUserPassword(views.APIView):
                 username=request.user.username,
             )
 
-            res = Message.success(msg="Reset Password link is sent to your mail.")
-            return response.Response(res["body"], status=res["status"])
+            return Message.success(msg="Reset Password link is sent to your email.")
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
     def post(self, request):
         try:
             if not check_authenticated_user(request.user):
-                res = Message.error(msg="You are not authenticated yet. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You are not authenticated yet. Try again.")
 
             new_password = request.data["new_password"]
             current_password = request.data["current_password"]
@@ -357,36 +331,31 @@ class ResetUserPassword(views.APIView):
             if not models.ResetPasswordCode.objects.filter(
                 uid=uid, token=token
             ).exists():
-                res = Message.error(msg="You have entered wrong code. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You have entered wrong code. Try again.")
 
             reset_password_code = models.ResetPasswordCode.objects.filter(
                 uid=uid, token=token
             )[0]
 
             if reset_password_code.user != request.user:
-                res = Message.error(msg="You are not allowed to do this. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You are not allowed to do this. Try again.")
 
             user = request.user
 
             if not user.check_password(current_password):
-                res = Message.error(
+                return Message.error(
                     msg="Your current password is not correct. Try again."
                 )
-                return response.Response(res["body"], status=res["status"])
 
             user.set_password(new_password)
             user.save()
 
             reset_password_code.delete()
 
-            res = Message.success(msg="Successfully changed the password")
-            return response.Response(res["body"], status=res["status"])
+            return Message.success(msg="Successfully updated the password")
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
 
 class ResetUserEmail(views.APIView):
@@ -405,8 +374,7 @@ class ResetUserEmail(views.APIView):
     def post(self, request):
         try:
             if not check_authenticated_user(request.user):
-                res = Message.error(msg="You are not authenticated yet. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You are not authenticated yet. Try again.")
 
             new_email = request.data["email"]
 
@@ -423,36 +391,31 @@ class ResetUserEmail(views.APIView):
                 username=request.user.username,
             )
 
-            res = Message.success(msg="Reset Email link is sent to your email.")
-            return response.Response(res["body"], status=res["status"])
+            return Message.success(msg="Reset Email link is sent to your email.")
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
 
 class UpdateEmailView(views.APIView):
     def post(self, request):
         try:
             if not check_authenticated_user(request.user):
-                res = Message.error(msg="You are not authenticated yet. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You are not authenticated yet. Try again.")
 
             new_email = request.data["email"]
             uid = request.data["uid"]
             token = request.data["token"]
 
             if not models.ResetEmailCode.objects.filter(uid=uid, token=token).exists():
-                res = Message.error(msg="You have entered wrong code. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You have entered wrong code. Try again.")
 
             reset_email_code = models.ResetEmailCode.objects.filter(
                 uid=uid, token=token
             )[0]
 
             if reset_email_code.user != request.user:
-                res = Message.error(msg="You are not allowed to do this. Try again.")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(msg="You are not allowed to do this. Try again.")
 
             user = request.user
             user.email = new_email
@@ -460,12 +423,10 @@ class UpdateEmailView(views.APIView):
 
             reset_email_code.delete()
 
-            res = Message.success(msg="Successfully updated the email")
-            return response.Response(res["body"], status=res["status"])
+            return Message.success(msg="Successfully updated the email")
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")
 
 
 class github_auth_redirect(views.APIView):
@@ -480,10 +441,7 @@ class github_authenticate(views.APIView):
     def get(self, request, format=None):
         code = request.GET.get("code")
         if not code:
-            return response.Response(
-                {"error": "Authorization code not provided"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Message.error(msg="Authorization code not provided")
 
         data = {
             "client_id": settings.GITHUB_CLIENT_ID,
@@ -546,18 +504,12 @@ class github_authenticate(views.APIView):
                     },
                     status=status.HTTP_200_OK,
                 )
-                # return response.Response({"error": str("e")}, status=status.HTTP_200_OK)
 
             except Exception as e:
-                return response.Response(
-                    {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
-                )
+                return Message.error(msg=f"{e}")
 
         else:
-            return response.Response(
-                {"error": "Failed to authenticate with GitHub"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Message.error(msg="Failed to authenticate with Github")
 
 
 class google_auth_redirect(views.APIView):
@@ -572,10 +524,7 @@ class google_authenticate(views.APIView):
     def get(self, request, format=None):
         code = request.GET.get("code")
         if not code:
-            return response.Response(
-                {"error": "Authorization code not provided"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Message.error(msg="Authorization code not provided")
 
         data = {
             "code": code,
@@ -636,15 +585,10 @@ class google_authenticate(views.APIView):
                 )
 
             except Exception as e:
-                return response.Response(
-                    {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
-                )
+                return Message.error(msg=f"{e}")
 
         else:
-            return response.Response(
-                {"error": "Failed to authenticate with Google"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Message.error(msg="Failed to authenticate with Google")
 
 
 class ListAllUser(views.APIView):
@@ -657,5 +601,4 @@ class ListAllUser(views.APIView):
             return response.Response(serialized_data.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(f"{e}")

@@ -45,6 +45,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self) -> str:
         return self.username
 
+    def save(self, *args, **kwargs):
+        if not Profile.objects.filter(user=self).exists():
+            Profile.objects.create(user=self)
+        return super().save(*args, **kwargs)
+
 
 class ActivationCode(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)

@@ -22,16 +22,16 @@ def calculateCoursePrice(price: int, offer: float) -> float:
 
 class Message:
     def warn(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_406_NOT_ACCEPTABLE}
+        return response.Response({"error": msg}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def error(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_400_BAD_REQUEST}
+        return response.Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
     def success(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_200_OK}
+        return response.Response({"success": msg}, status=status.HTTP_200_OK)
 
     def create(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_201_CREATED}
+        return response.Response({"success": msg}, status=status.HTTP_201_CREATED)
 
 
 class CourseCheckoutView(views.APIView):
@@ -40,8 +40,7 @@ class CourseCheckoutView(views.APIView):
     def get(self, request, course_id):
         try:
             if not models.Course.objects.filter(id=course_id).exists():
-                res = Message.error("Course not found")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error("Course not found")
 
             course = models.Course.objects.get(id=course_id)
             user = request.user
@@ -63,27 +62,25 @@ class CourseCheckoutView(views.APIView):
                     "city": profile.city,
                     "phone": profile.phone,
                     "address": profile.address,
-                }
+                },
+                status=status.HTTP_200_OK,
             )
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class InitiatePaymentView(views.APIView):
     def post(self, request, course_id):
         try:
             if not models.Course.objects.filter(id=course_id).exists():
-                res = Message.error("Course not found")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error("Course not found")
 
             course = models.Course.objects.get(id=course_id)
             user = request.user
 
             if course in Profile.objects.get(user=request.user).purchased_courses.all():
-                res = Message.error("Course already purchased")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error("You have already purchased this course")
 
             total = calculateCoursePrice(course.price, course.offer)
 
@@ -126,8 +123,7 @@ class InitiatePaymentView(views.APIView):
             )
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class VerifyPaymentView(views.APIView):
@@ -137,9 +133,8 @@ class VerifyPaymentView(views.APIView):
             if not models.Purchase.objects.filter(
                 razorpay_order_id=data["razorpay_order_id"]
             ).exists():
-                return response.Response(
-                    {"status": "Order not found"}, status=status.HTTP_404_NOT_FOUND
-                )
+                return Message.error("Order not found")
+
             purchase = models.Purchase.objects.get(
                 razorpay_order_id=data["razorpay_order_id"]
             )
@@ -163,11 +158,10 @@ class VerifyPaymentView(views.APIView):
             profile.purchased_courses.add(course)
             profile.save()
 
-            return response.Response({"status": "Payment successful"})
+            return Message.success("Payment successful")
+
         except razorpay.errors.SignatureVerificationError:
-            return response.Response(
-                {"status": "Payment failed"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Message.error("Invalid signature")
 
 
 class CancelPaymentView(views.APIView):
@@ -177,19 +171,18 @@ class CancelPaymentView(views.APIView):
             if not models.Purchase.objects.filter(
                 razorpay_order_id=data["razorpay_order_id"]
             ).exists():
-                return response.Response(
-                    {"status": "Order not found"}, status=status.HTTP_404_NOT_FOUND
-                )
+                return Message.error("Order not found")
+
             purchase = models.Purchase.objects.get(
                 razorpay_order_id=data["razorpay_order_id"]
             )
 
             purchase.delete()
 
-            return response.Response({"status": "Payment cancelled"})
+            return Message.success("Payment cancelled")
+
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class CreateCouponView(views.APIView):
@@ -200,18 +193,14 @@ class CreateCouponView(views.APIView):
             serializer = serializers.CreateCouponSerializer(data=request.data)
 
             if not serializer.is_valid():
-                res = Message.error(serializer.errors)
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(serializer.errors)
 
             serializer.save()
 
-            return response.Response(
-                {"msg": "Coupne is created."}, status=status.HTTP_201_CREATED
-            )
+            return response.Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.warn(str(e))
 
 
 class EditCouponView(views.APIView):
@@ -223,31 +212,24 @@ class EditCouponView(views.APIView):
             serializer = serializers.CreateCouponSerializer(coupon, data=request.data)
 
             if not serializer.is_valid():
-                res = Message.error(serializer.errors)
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(serializer.errors)
 
             serializer.save()
 
-            return response.Response(
-                {"msg": "Coupne is updated."}, status=status.HTTP_200_OK
-            )
+            return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
     def delete(self, request, id):
         try:
             coupon = get_object_or_404(models.CuponeCode, id=id)
             coupon.delete()
 
-            return response.Response(
-                {"msg": "Coupne is deleted."}, status=status.HTTP_200_OK
-            )
+            return Message.success("Coupon is deleted")
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class ListCouponView(views.APIView):
@@ -261,8 +243,7 @@ class ListCouponView(views.APIView):
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.warn(str(e))
 
 
 class ApplyCouponView(views.APIView):
@@ -274,22 +255,18 @@ class ApplyCouponView(views.APIView):
             course = models.Course.objects.get(id=course_id)
 
             if not models.CuponeCode.objects.filter(code=coupon).exists():
-                res = Message.error("Coupon not found")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error("Coupon not found")
 
             coupon = models.CuponeCode.objects.get(code=coupon)
 
             if not coupon.is_active:
-                res = Message.error("Coupon not active")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error("Coupon is not active")
 
             if coupon.expiry < timezone.now().date():
-                res = Message.error("Coupon expired")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error("Coupon is expired")
 
             if not coupon.is_unlimited and coupon.used >= coupon.quantity:
-                res = Message.error("Coupon limit exceeded")
-                return response.Response(res["body"], status=res["status"])
+                return Message.error("Coupon is out of stock")
 
             discount = coupon.discount
 
@@ -307,9 +284,7 @@ class ApplyCouponView(views.APIView):
             )
 
         except Exception as e:
-            print(e)
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class ListTransactionsView(views.APIView):
@@ -323,9 +298,9 @@ class ListTransactionsView(views.APIView):
             # purchases = paginator.get_page(page)
             serializer = serializers.ListTransactionSerializer(purchases, many=True)
             return response.Response(serializer.data, status=status.HTTP_200_OK)
+
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class ListSelfTransactionsView(views.APIView):
@@ -339,6 +314,6 @@ class ListSelfTransactionsView(views.APIView):
             # purchases = paginator.get_page(page)
             serializer = serializers.ListTransactionSerializer(purchases, many=True)
             return response.Response(serializer.data, status=status.HTTP_200_OK)
+
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))

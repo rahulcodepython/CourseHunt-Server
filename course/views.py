@@ -1,25 +1,22 @@
 from rest_framework import views, response, status, permissions
 from django.core.paginator import Paginator
 from . import serializers, models
-import razorpay
-from django.conf import settings
 from django.shortcuts import get_object_or_404
 from authentication.models import Profile
-from django.utils import timezone
 
 
 class Message:
     def warn(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_406_NOT_ACCEPTABLE}
+        return response.Response({"error": msg}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def error(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_400_BAD_REQUEST}
+        return response.Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
     def success(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_200_OK}
+        return response.Response({"success": msg}, status=status.HTTP_200_OK)
 
     def create(msg: str) -> object:
-        return {"body": {"message": msg}, "status": status.HTTP_201_CREATED}
+        return response.Response({"success": msg}, status=status.HTTP_201_CREATED)
 
 
 class CreateCourseView(views.APIView):
@@ -30,16 +27,14 @@ class CreateCourseView(views.APIView):
             serializer = serializers.CreateCourseSerializer(data=request.data)
 
             if not serializer.is_valid():
-                res = Message.error(serializer.errors)
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(serializer.errors)
 
-            course = serializer.save()
+            serializer.save()
 
-            return response.Response({"id": course.id}, status=status.HTTP_201_CREATED)
+            return response.Response(serializer.data, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class ListCoursesView(views.APIView):
@@ -62,8 +57,7 @@ class ListCoursesView(views.APIView):
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class AdminListCoursesView(views.APIView):
@@ -83,8 +77,7 @@ class AdminListCoursesView(views.APIView):
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class PurchasedListCoursesView(views.APIView):
@@ -104,8 +97,7 @@ class PurchasedListCoursesView(views.APIView):
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class EditCourseView(views.APIView):
@@ -119,8 +111,7 @@ class EditCourseView(views.APIView):
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
     def patch(self, request, course_id):
         try:
@@ -130,27 +121,24 @@ class EditCourseView(views.APIView):
             )
 
             if not serializer.is_valid():
-                res = Message.error(serializer.errors)
-                return response.Response(res["body"], status=res["status"])
+                return Message.error(serializer.errors)
 
             serializer.save()
 
-            return response.Response({"id": course_id}, status=status.HTTP_200_OK)
+            return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
     def delete(self, request, course_id):
         try:
             course = models.Course.objects.get(id=course_id)
             course.delete()
 
-            return response.Response({"id": course_id}, status=status.HTTP_200_OK)
+            return Message.success("Course deleted successfully")
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class ToggleCourseStatusView(views.APIView):
@@ -167,11 +155,10 @@ class ToggleCourseStatusView(views.APIView):
 
             course.save()
 
-            return response.Response({"id": course_id}, status=status.HTTP_200_OK)
+            return Message.success("Course status updated successfully")
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class StudySingleCourseView(views.APIView):
@@ -183,16 +170,14 @@ class StudySingleCourseView(views.APIView):
             course = models.Course.objects.get(id=course_id)
 
             if course not in profile.purchased_courses.all():
-                res = Message.error("Course not purchased")
-                return response.Response(res["body"], status=res["status"])
+                return Message.warn("You have not purchased this course")
 
             serializer = serializers.StudySingleCourseSerializer(course)
 
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
 
 
 class DetailSingleCourseView(views.APIView):
@@ -212,5 +197,4 @@ class DetailSingleCourseView(views.APIView):
             return response.Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            res = Message.warn(str(e))
-            return response.Response(res["body"], status=res["status"])
+            return Message.error(str(e))
