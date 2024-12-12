@@ -304,22 +304,6 @@ class TokenRefreshView(views.APIView):
             return response.Response(res["body"], status=res["status"])
 
 
-class UserDataView(views.APIView):
-    def get(self, request):
-        try:
-            if not check_authenticated_user(request.user):
-                res = Message.error(msg="You are not authenticated yet. Try again.")
-                return response.Response(res["body"], status=res["status"])
-
-            return response.Response(
-                serializers.UserSerializer(request.user).data, status=status.HTTP_200_OK
-            )
-
-        except Exception as e:
-            res = Message.error(f"{e}")
-            return response.Response(res["body"], status=res["status"])
-
-
 class ResetUserPassword(views.APIView):
     def create_uid(self):
         uid = tokens.create_uid()

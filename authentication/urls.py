@@ -9,7 +9,6 @@ urlpatterns = [
     path("users/jwt/create/", views.CreateJWT.as_view()),
     path("users/jwt/refresh/", views.TokenRefreshView.as_view()),
     path("users/jwt/verify/", TokenVerifyView.as_view()),
-    path("users/user/", views.UserDataView.as_view()),
     path("users/set_password/", views.ResetUserPassword.as_view()),
     path("users/set_email/", views.ResetUserEmail.as_view()),
     path("users/update_email/", views.UpdateEmailView.as_view()),

@@ -9,4 +9,5 @@ urlpatterns = [
     path("", views.Test.as_view()),
     path("auth/", include("authentication.urls")),
     path("course/", include("course.urls")),
+    path("feedback/", include("feedback.urls")),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
