@@ -31,7 +31,7 @@ class CreateCourseView(views.APIView):
 
             serializer.save()
 
-            return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Message.create("Course created successfully")
 
         except Exception as e:
             return Message.error(str(e))
@@ -125,7 +125,7 @@ class EditCourseView(views.APIView):
 
             serializer.save()
 
-            return response.Response(serializer.data, status=status.HTTP_200_OK)
+            return Message.success("Course updated successfully")
 
         except Exception as e:
             return Message.error(str(e))

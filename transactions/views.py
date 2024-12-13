@@ -209,7 +209,9 @@ class EditCouponView(views.APIView):
     def post(self, request, id):
         try:
             coupon = get_object_or_404(models.CuponeCode, id=id)
-            serializer = serializers.CreateCouponSerializer(coupon, data=request.data)
+            serializer = serializers.CreateCouponSerializer(
+                coupon, data=request.data, partial=True
+            )
 
             if not serializer.is_valid():
                 return Message.error(serializer.errors)

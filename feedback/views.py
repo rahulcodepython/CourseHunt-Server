@@ -17,8 +17,10 @@ class CreateFeedback(views.APIView):
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
-            return response.Response(serializer.data, status=status.HTTP_201_CREATED)
-
+            return response.Response(
+                {"success": "Your feedback is been recorded."},
+                status=status.HTTP_201_CREATED,
+            )
         except Exception as e:
             return response.Response(
                 {"error": str(e)}, status=status.HTTP_400_BAD_REQUEST
@@ -49,7 +51,7 @@ class DeleteFeedback(views.APIView):
             feedback.delete()
             return response.Response(
                 {"success": "Feedback is deleted successfully."},
-                status=status.HTTP_204_NO_CONTENT,
+                status=status.HTTP_200_OK,
             )
 
         except Exception as e:
