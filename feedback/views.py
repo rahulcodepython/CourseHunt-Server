@@ -2,8 +2,9 @@ from rest_framework import views, response, status, permissions
 from django.core.paginator import Paginator
 from . import serializers, models
 from django.shortcuts import get_object_or_404
+import os
 
-# Create your views here.
+BACKEND_URL = os.getenv("BASE_API_URL")
 
 
 class CreateFeedback(views.APIView):
@@ -32,9 +33,26 @@ class ListFeedback(views.APIView):
 
     def get(self, request):
         try:
-            feedbacks = models.Feedback.objects.all()
+            feedbacks = models.Feedback.objects.all().order_by("-id")
+            page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+            paginator = Paginator(feedbacks, 1)
+            page = paginator.page(page_no)
+            feedbacks = page.object_list
+
             serializer = serializers.FeedbackSerializer(feedbacks, many=True)
-            return response.Response(serializer.data, status=status.HTTP_200_OK)
+
+            return response.Response(
+                {
+                    "results": serializer.data,
+                    "count": paginator.count,
+                    "next": (
+                        f"{BACKEND_URL}/feedback/list/?page={page.next_page_number()}"
+                        if page.has_next()
+                        else None
+                    ),
+                },
+                status=status.HTTP_200_OK,
+            )
 
         except Exception as e:
             return response.Response(

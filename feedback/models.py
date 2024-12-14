@@ -19,4 +19,9 @@ class Feedback(models.Model):
         if not self.id:
             self.id = str(uuid.uuid4())
 
+        if self.rating < 0:
+            self.rating = 0
+        elif self.rating > 5:
+            self.rating = 5
+
         super(Feedback, self).save(*args, **kwargs)

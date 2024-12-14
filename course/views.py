@@ -3,6 +3,9 @@ from django.core.paginator import Paginator
 from . import serializers, models
 from django.shortcuts import get_object_or_404
 from authentication.models import Profile
+import os
+
+BACKEND_URL = os.getenv("BASE_API_URL")
 
 
 class Message:
@@ -65,16 +68,28 @@ class AdminListCoursesView(views.APIView):
 
     def get(self, request):
         try:
-            courses = models.Course.objects.all()
-            # paginator = Paginator(courses, 10)
-            # page = request.GET.get("page")
-            # courses = paginator.get_page(page)
+            page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+            courses = models.Course.objects.all().order_by("-id")
+            paginator = Paginator(courses, 2)
+            page = paginator.page(page_no)
+            courses = page.object_list
 
             serializer = serializers.ListCoursesAdminDashboardSerializer(
                 courses, many=True
             )
 
-            return response.Response(serializer.data, status=status.HTTP_200_OK)
+            return response.Response(
+                {
+                    "results": serializer.data,
+                    "count": paginator.count,
+                    "next": (
+                        f"{BACKEND_URL}/course/admin-list-course/?page={page.next_page_number()}"
+                        if page.has_next()
+                        else None
+                    ),
+                },
+                status=status.HTTP_200_OK,
+            )
 
         except Exception as e:
             return Message.error(str(e))
@@ -85,16 +100,28 @@ class PurchasedListCoursesView(views.APIView):
 
     def get(self, request):
         try:
-            profile = get_object_or_404(Profile, user=request.user)
+            profile = Profile.objects.get(user=request.user)
             courses = profile.purchased_courses.all()
 
-            # paginator = Paginator(courses, 10)
-            # page = request.GET.get("page")
-            # courses = paginator.get_page(page)
+            paginator = Paginator(courses, 1)
+            page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+            page = paginator.page(page_no)
+            courses = page.object_list
 
             serializer = serializers.ListCoursesDashboardSerializer(courses, many=True)
 
-            return response.Response(serializer.data, status=status.HTTP_200_OK)
+            return response.Response(
+                {
+                    "results": serializer.data,
+                    "count": paginator.count,
+                    "next": (
+                        f"{BACKEND_URL}/course/purchased-courses/?page={page.next_page_number()}"
+                        if page.has_next()
+                        else None
+                    ),
+                },
+                status=status.HTTP_200_OK,
+            )
 
         except Exception as e:
             return Message.error(str(e))

@@ -6,7 +6,9 @@ from django.conf import settings
 from django.shortcuts import get_object_or_404
 from authentication.models import Profile
 from django.utils import timezone
+import os
 
+BACKEND_URL = os.getenv("BASE_API_URL")
 
 razorpay_client = razorpay.Client(
     auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_SECRET_KEY)
@@ -197,7 +199,10 @@ class CreateCouponView(views.APIView):
 
             serializer.save()
 
-            return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+            new_coupon = models.CuponeCode.objects.get(id=serializer.data["id"])
+            new_serializer = serializers.ListCouponSerializer(new_coupon)
+
+            return response.Response(new_serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
             return Message.warn(str(e))
@@ -218,9 +223,13 @@ class EditCouponView(views.APIView):
 
             serializer.save()
 
-            return response.Response(serializer.data, status=status.HTTP_200_OK)
+            updated_coupon = models.CuponeCode.objects.get(id=serializer.data["id"])
+            updated_serializer = serializers.ListCouponSerializer(updated_coupon)
+
+            return response.Response(updated_serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
+            print(str(e))
             return Message.error(str(e))
 
     def delete(self, request, id):
@@ -239,10 +248,26 @@ class ListCouponView(views.APIView):
 
     def get(self, request):
         try:
-            coupons = models.CuponeCode.objects.all()
+            coupons = models.CuponeCode.objects.all().order_by("-id")
+            page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+            paginator = Paginator(coupons, 1)
+            page = paginator.page(page_no)
+            coupons = page.object_list
+
             serializer = serializers.ListCouponSerializer(coupons, many=True)
 
-            return response.Response(serializer.data, status=status.HTTP_200_OK)
+            return response.Response(
+                {
+                    "results": serializer.data,
+                    "count": paginator.count,
+                    "next": (
+                        f"{BACKEND_URL}/transactions/list-coupon-code/?page={page.next_page_number()}"
+                        if page.has_next()
+                        else None
+                    ),
+                },
+                status=status.HTTP_200_OK,
+            )
 
         except Exception as e:
             return Message.warn(str(e))
@@ -294,12 +319,25 @@ class ListTransactionsView(views.APIView):
 
     def get(self, request):
         try:
-            purchases = models.Purchase.objects.all()
-            # paginator = Paginator(purchases, 10)
-            # page = request.GET.get("page")
-            # purchases = paginator.get_page(page)
+            purchases = models.Purchase.objects.all().order_by("-id")
+            paginator = Paginator(purchases, 1)
+            page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+            page = paginator.page(page_no)
+            purchases = page.object_list
             serializer = serializers.ListTransactionSerializer(purchases, many=True)
-            return response.Response(serializer.data, status=status.HTTP_200_OK)
+
+            return response.Response(
+                {
+                    "results": serializer.data,
+                    "count": paginator.count,
+                    "next": (
+                        f"{BACKEND_URL}/transactions/list-transactions/?page={page.next_page_number()}"
+                        if page.has_next()
+                        else None
+                    ),
+                },
+                status=status.HTTP_200_OK,
+            )
 
         except Exception as e:
             return Message.error(str(e))
@@ -311,11 +349,25 @@ class ListSelfTransactionsView(views.APIView):
     def get(self, request):
         try:
             purchases = models.Purchase.objects.filter(user=request.user)
-            # paginator = Paginator(purchases, 10)
-            # page = request.GET.get("page")
-            # purchases = paginator.get_page(page)
+            paginator = Paginator(purchases, 1)
+            page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+            page = paginator.get_page(page_no)
+            purchases = page.object_list
+
             serializer = serializers.ListTransactionSerializer(purchases, many=True)
-            return response.Response(serializer.data, status=status.HTTP_200_OK)
+
+            return response.Response(
+                {
+                    "results": serializer.data,
+                    "count": paginator.count,
+                    "next": (
+                        f"{BACKEND_URL}/transactions/list-self-transactions/?page={page.next_page_number()}"
+                        if page.has_next()
+                        else None
+                    ),
+                },
+                status=status.HTTP_200_OK,
+            )
 
         except Exception as e:
             return Message.error(str(e))
