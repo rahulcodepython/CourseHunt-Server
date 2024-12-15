@@ -8,7 +8,7 @@ from authentication.models import Profile
 from django.utils import timezone
 import os
 
-BACKEND_URL = os.getenv("BASE_API_URL")
+BASE_API_URL = os.getenv("BASE_API_URL")
 
 razorpay_client = razorpay.Client(
     auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_SECRET_KEY)
@@ -229,7 +229,6 @@ class EditCouponView(views.APIView):
             return response.Response(updated_serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            print(str(e))
             return Message.error(str(e))
 
     def delete(self, request, id):
@@ -261,7 +260,7 @@ class ListCouponView(views.APIView):
                     "results": serializer.data,
                     "count": paginator.count,
                     "next": (
-                        f"{BACKEND_URL}/transactions/list-coupon-code/?page={page.next_page_number()}"
+                        f"{BASE_API_URL}/transactions/list-coupon-code/?page={page.next_page_number()}"
                         if page.has_next()
                         else None
                     ),
@@ -331,7 +330,7 @@ class ListTransactionsView(views.APIView):
                     "results": serializer.data,
                     "count": paginator.count,
                     "next": (
-                        f"{BACKEND_URL}/transactions/list-transactions/?page={page.next_page_number()}"
+                        f"{BASE_API_URL}/transactions/list-transactions/?page={page.next_page_number()}"
                         if page.has_next()
                         else None
                     ),
@@ -361,7 +360,7 @@ class ListSelfTransactionsView(views.APIView):
                     "results": serializer.data,
                     "count": paginator.count,
                     "next": (
-                        f"{BACKEND_URL}/transactions/list-self-transactions/?page={page.next_page_number()}"
+                        f"{BASE_API_URL}/transactions/list-self-transactions/?page={page.next_page_number()}"
                         if page.has_next()
                         else None
                     ),

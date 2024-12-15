@@ -160,7 +160,6 @@ COMPANY_NAME = "Coursera"
 SEND_ACTIVATION_EMAIL = True
 SEND_RESET_PASSWORD_CONFIRMATION_EMAIL = True
 SEND_RESET_EMAIL_CONFIRMATION_EMAIL = True
-FRONTEND_URL = os.getenv("BASE_APP_URL")
 ACTIVATION_URL = "activate/"
 RESET_PASSWORD_CONFIRMATION_URL = "reset-password/"
 
@@ -176,15 +175,19 @@ SIMPLE_JWT = {
     "USER_ID_CLAIM": "username",
 }
 
+# Frontend and Backend URL
+BASE_APP_URL = os.getenv("BASE_APP_URL", "")
+BASE_API_URL = os.getenv("BASE_API_URL", "")
+
 # GitHub OAuth details
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
+
 # Google OAuth details
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 
 # Backend URL
-BACKEND_URL = os.getenv("BASE_API_URL", "")
 GITHUB_REDIRECT_URI = os.getenv("GITHUB_REDIRECT_URI", "")
 GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "")
 

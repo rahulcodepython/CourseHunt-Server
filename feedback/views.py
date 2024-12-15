@@ -4,7 +4,7 @@ from . import serializers, models
 from django.shortcuts import get_object_or_404
 import os
 
-BACKEND_URL = os.getenv("BASE_API_URL")
+BASE_API_URL = os.getenv("BASE_API_URL")
 
 
 class CreateFeedback(views.APIView):
@@ -46,7 +46,7 @@ class ListFeedback(views.APIView):
                     "results": serializer.data,
                     "count": paginator.count,
                     "next": (
-                        f"{BACKEND_URL}/feedback/list/?page={page.next_page_number()}"
+                        f"{BASE_API_URL}/feedback/list/?page={page.next_page_number()}"
                         if page.has_next()
                         else None
                     ),

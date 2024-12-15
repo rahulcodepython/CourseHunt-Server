@@ -4,7 +4,8 @@ from rest_framework import views, response, status, permissions
 from django.conf import settings
 from . import serializers, email, models, tokens
 import requests
-
+import uuid
+from django.core.cache import cache
 
 User = get_user_model()
 
@@ -431,22 +432,40 @@ class UpdateEmailView(views.APIView):
 
 class github_auth_redirect(views.APIView):
     def get(self, request, format=None):
+        state = str(uuid.uuid4())
+
+        cache.set(f"github_oauth_state_{state}", True, timeout=300)
+
         redirect_uri = settings.GITHUB_REDIRECT_URI
-        github_auth_url = f"https://github.com/login/oauth/authorize?client_id={
-            settings.GITHUB_CLIENT_ID}&redirect_uri={redirect_uri}&scope=user"
+        app_url = settings.BASE_APP_URL
+
+        github_auth_url = (
+            f"https://github.com/login/oauth/authorize/?client_id={settings.GITHUB_CLIENT_ID}"
+            f"&redirect_uri={app_url + '/' + redirect_uri}&scope=user&state={state}"
+        )
         return response.Response({"url": github_auth_url}, status=status.HTTP_200_OK)
 
 
 class github_authenticate(views.APIView):
     def get(self, request, format=None):
         code = request.GET.get("code")
+        state = request.GET.get("state")
+
         if not code:
             return Message.error(msg="Authorization code not provided")
+        if not state:
+            return Message.error(msg="State parameter is missing")
+
+        if not cache.get(f"github_oauth_state_{state}"):
+            return Message.error(msg="Invalid or expired state parameter")
+
+        cache.delete(f"github_oauth_state_{state}")
 
         data = {
             "client_id": settings.GITHUB_CLIENT_ID,
             "client_secret": settings.GITHUB_CLIENT_SECRET,
             "code": code,
+            "redirect_uri": settings.BASE_APP_URL + "/" + settings.GITHUB_REDIRECT_URI,
         }
 
         response_github = requests.post(
@@ -459,7 +478,7 @@ class github_authenticate(views.APIView):
         if access_token:
             user_data = requests.get(
                 "https://api.github.com/user",
-                headers={"Authorization": f"token {access_token}"},
+                headers={"Authorization": f"Bearer {access_token}"},
             ).json()
 
             github_username = user_data.get("login")
@@ -467,10 +486,14 @@ class github_authenticate(views.APIView):
             try:
                 if User.objects.filter(username=github_username).exists():
                     user = User.objects.get(username=github_username)
+
+                    user_data = serializers.UserSerializer(user).data
+                    tokens = get_tokens_for_user(user)
+
                     return response.Response(
                         {
-                            **get_tokens_for_user(user),
-                            "user": serializers.UserSerializer(user).data,
+                            **tokens,
+                            "user": user_data,
                         },
                         status=status.HTTP_200_OK,
                     )
@@ -482,8 +505,6 @@ class github_authenticate(views.APIView):
                 last_name = "".join(user_data.get("name").split()[1:])
                 password = user_data.get("node_id")
                 image = user_data.get("avatar_url")
-                # html_url = user_data.get("html_url")
-                # bio = user_data.get("bio")
 
                 user = User.objects.create_user(
                     email=github_email,
@@ -497,10 +518,13 @@ class github_authenticate(views.APIView):
                 user.set_password(password)
                 user.save()
 
+                user_data = serializers.UserSerializer(user).data
+                tokens = get_tokens_for_user(user)
+
                 return response.Response(
                     {
-                        **get_tokens_for_user(user),
-                        "user": serializers.UserSerializer(user).data,
+                        **tokens,
+                        "user": user_data,
                     },
                     status=status.HTTP_200_OK,
                 )
@@ -515,14 +539,17 @@ class github_authenticate(views.APIView):
 class google_auth_redirect(views.APIView):
     def get(self, request, format=None):
         redirect_uri = settings.GOOGLE_REDIRECT_URI
+        app_url = settings.BASE_APP_URL
+
         google_auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={
-            settings.GOOGLE_CLIENT_ID}&redirect_uri={redirect_uri}&scope=email%20profile&response_type=code"
+            settings.GOOGLE_CLIENT_ID}&redirect_uri={app_url + '/' + redirect_uri}&scope=email%20profile&response_type=code"
         return response.Response({"url": google_auth_url}, status=status.HTTP_200_OK)
 
 
 class google_authenticate(views.APIView):
     def get(self, request, format=None):
         code = request.GET.get("code")
+
         if not code:
             return Message.error(msg="Authorization code not provided")
 
@@ -530,7 +557,7 @@ class google_authenticate(views.APIView):
             "code": code,
             "client_id": settings.GOOGLE_CLIENT_ID,
             "client_secret": settings.GOOGLE_CLIENT_SECRET,
-            "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+            "redirect_uri": settings.BASE_APP_URL + "/" + settings.GOOGLE_REDIRECT_URI,
             "grant_type": "authorization_code",
         }
 
@@ -550,10 +577,14 @@ class google_authenticate(views.APIView):
             try:
                 if User.objects.filter(email=google_email).exists():
                     user = User.objects.get(email=google_email)
+                    user_data = serializers.UserSerializer(user).data
+
+                    tokens = get_tokens_for_user(user)
+
                     return response.Response(
                         {
-                            **get_tokens_for_user(user),
-                            "user": serializers.UserSerializer(user).data,
+                            **tokens,
+                            "user": user_data,
                         },
                         status=status.HTTP_200_OK,
                     )
@@ -576,10 +607,13 @@ class google_authenticate(views.APIView):
                 user.set_password(password)
                 user.save()
 
+                user_data = serializers.UserSerializer(user).data
+                tokens = get_tokens_for_user(user)
+
                 return response.Response(
                     {
-                        **get_tokens_for_user(user),
-                        "user": serializers.UserSerializer(user).data,
+                        **tokens,
+                        "user": user_data,
                     },
                     status=status.HTTP_200_OK,
                 )

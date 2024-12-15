@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from authentication.models import Profile
 import os
 
-BACKEND_URL = os.getenv("BASE_API_URL")
+BASE_API_URL = os.getenv("BASE_API_URL")
 
 
 class Message:
@@ -83,7 +83,7 @@ class AdminListCoursesView(views.APIView):
                     "results": serializer.data,
                     "count": paginator.count,
                     "next": (
-                        f"{BACKEND_URL}/course/admin-list-course/?page={page.next_page_number()}"
+                        f"{BASE_API_URL}/course/admin-list-course/?page={page.next_page_number()}"
                         if page.has_next()
                         else None
                     ),
@@ -115,7 +115,7 @@ class PurchasedListCoursesView(views.APIView):
                     "results": serializer.data,
                     "count": paginator.count,
                     "next": (
-                        f"{BACKEND_URL}/course/purchased-courses/?page={page.next_page_number()}"
+                        f"{BASE_API_URL}/course/purchased-courses/?page={page.next_page_number()}"
                         if page.has_next()
                         else None
                     ),
