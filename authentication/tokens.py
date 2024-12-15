@@ -1,9 +1,7 @@
 import random
+import string
 
 
-def create_uid() -> int:
-    return random.randint(1000, 9999)
-
-
-def create_token() -> int:
-    return random.randint(1000, 9999)
+def generate_random_code(length=4):
+    characters = string.ascii_letters + string.digits
+    return "".join(random.choices(characters, k=length))

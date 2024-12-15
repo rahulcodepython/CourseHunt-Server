@@ -64,3 +64,24 @@ def ResetEmailConfirmation(uid, token, email, username):
         )
         msg.attach_alternative(html_body, "text/html")
         msg.send()
+
+
+def LoginConfirmation(uid, token, email, username):
+    if settings.SEND_LOGIN_CONFIRMATION_EMAIL:
+        subject = "Login Confirmation - Action Required"
+        html_body = render_to_string(
+            "login_confirmation.html",
+            {
+                "username": username,
+                "company_name": settings.COMPANY_NAME,
+                "host_email": settings.EMAIL_HOST_USER,
+                "uid": uid,
+                "token": token,
+            },
+        )
+
+        msg = EmailMultiAlternatives(
+            subject=subject, from_email=settings.EMAIL_HOST_USER, to=[email]
+        )
+        msg.attach_alternative(html_body, "text/html")
+        msg.send()

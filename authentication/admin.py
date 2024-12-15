@@ -32,6 +32,11 @@ class ResetEmailCodeAdmin(admin.ModelAdmin):
     list_display = ["user", "uid", "token", "created_at"]
 
 
+@admin.register(models.LoginCode)
+class LoginCodeAdmin(admin.ModelAdmin):
+    list_display = ["user", "uid", "token", "created_at"]
+
+
 @admin.register(models.Profile)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ["user"]

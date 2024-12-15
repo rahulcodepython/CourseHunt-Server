@@ -52,11 +52,25 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self
 
 
+class LoginCode(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    uid = models.CharField(default="", max_length=4)
+    token = models.CharField(default="", max_length=4)
+    created_at = models.TimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Login Code"
+        verbose_name_plural = "Login Codes"
+
+    def __str__(self) -> str:
+        return self.user.username
+
+
 class ActivationCode(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    uid = models.IntegerField(default=0)
-    token = models.IntegerField(default=0)
-    created_at = models.IntegerField(default=0)
+    uid = models.CharField(default="", max_length=4)
+    token = models.CharField(default="", max_length=4)
+    created_at = models.TimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Activation Code"
@@ -68,9 +82,9 @@ class ActivationCode(models.Model):
 
 class ResetPasswordCode(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    uid = models.IntegerField(default=0)
-    token = models.IntegerField(default=0)
-    created_at = models.IntegerField(default=0)
+    uid = models.CharField(default="", max_length=4)
+    token = models.CharField(default="", max_length=4)
+    created_at = models.TimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Reset Password Code"
@@ -82,9 +96,9 @@ class ResetPasswordCode(models.Model):
 
 class ResetEmailCode(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    uid = models.IntegerField(default=0)
-    token = models.IntegerField(default=0)
-    created_at = models.IntegerField(default=0)
+    uid = models.CharField(default="", max_length=4)
+    token = models.CharField(default="", max_length=4)
+    created_at = models.TimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Reset Email Code"

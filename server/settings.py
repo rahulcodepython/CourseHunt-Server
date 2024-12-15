@@ -146,6 +146,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # Auth Configuration
 AUTH_CONFIG = {"LOGIN_FIELD": "username"}
+OTP_VERIFICATION_LOGIN = True
 
 # Email Setup
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -160,8 +161,7 @@ COMPANY_NAME = "Coursera"
 SEND_ACTIVATION_EMAIL = True
 SEND_RESET_PASSWORD_CONFIRMATION_EMAIL = True
 SEND_RESET_EMAIL_CONFIRMATION_EMAIL = True
-ACTIVATION_URL = "activate/"
-RESET_PASSWORD_CONFIRMATION_URL = "reset-password/"
+SEND_LOGIN_CONFIRMATION_EMAIL = True
 
 # JWT Configuration
 SIMPLE_JWT = {

@@ -48,13 +48,13 @@ def check_user_active(email: str) -> bool:
 
 class UserViews(views.APIView):
     def create_uid(self) -> int:
-        uid: int = tokens.create_uid()
+        uid: int = tokens.generate_random_code()
         if models.ActivationCode.objects.filter(uid=uid).exists():
             self.create_uid()
         return uid
 
     def create_token(self) -> int:
-        token: int = tokens.create_token()
+        token: int = tokens.generate_random_code()
         if models.ActivationCode.objects.filter(token=token).exists():
             self.create_token()
         return token
@@ -179,13 +179,13 @@ class ActivateUserViews(views.APIView):
 
 class ResendActivateUserViews(views.APIView):
     def create_uid(self):
-        uid = tokens.create_uid()
+        uid = tokens.generate_random_code()
         if models.ActivationCode.objects.filter(uid=uid).exists():
             self.create_uid()
         return uid
 
     def create_token(self):
-        token = tokens.create_token()
+        token = tokens.generate_random_code()
         if models.ActivationCode.objects.filter(token=token).exists():
             self.create_token()
         return token
@@ -224,28 +224,95 @@ class ResendActivateUserViews(views.APIView):
             return Message.error(f"{e}")
 
 
-class CreateJWT(views.APIView):
+class InitJWT(views.APIView):
+    def create_uid(self):
+        uid = tokens.generate_random_code()
+        if models.LoginCode.objects.filter(uid=uid).exists():
+            self.create_uid()
+        return uid
+
+    def create_token(self):
+        token = tokens.generate_random_code()
+        if models.LoginCode.objects.filter(token=token).exists():
+            self.create_token()
+        return token
+
     def post(self, request):
         try:
-            email = request.data["email"]
-            password = request.data["password"]
+            user_email = request.data["email"]
 
-            if not User.objects.filter(email=email).exists():
+            if not User.objects.filter(email=user_email).exists():
                 return Message.error(msg="No such user is there. Try again.")
 
-            username = User.objects.get(email=email).username
-
-            user = authenticate(username=username, password=password)
-
-            if user is None:
-                return Message.error(
-                    msg="Your email or password is not correct. Try again."
-                )
+            user = User.objects.get(email=user_email)
 
             if not user.is_active:
                 return Message.warn(
                     msg="You have already registered. But not verified you email yet. Please verify it first."
                 )
+
+            if models.LoginCode.objects.filter(user=user).exists():
+                models.LoginCode.objects.get(user=user).delete()
+
+            login_code = models.LoginCode.objects.create(
+                user=user, uid=self.create_uid(), token=self.create_token()
+            )
+
+            email.LoginConfirmation(
+                uid=login_code.uid,
+                token=login_code.token,
+                email=user.email,
+                username=user.username,
+            )
+
+            return Message.success(msg="Login code is sent to your email.")
+
+        except Exception as e:
+            print(str(e))
+            return Message.error(f"{e}")
+
+
+class CreateJWT(views.APIView):
+    def post(self, request):
+        try:
+            if settings.OTP_VERIFICATION_LOGIN is False:
+                email = request.data["email"]
+                password = request.data["password"]
+
+                if not User.objects.filter(email=email).exists():
+                    return Message.error(msg="No such user is there. Try again.")
+
+                username = User.objects.get(email=email).username
+
+                if not user.is_active:
+                    return Message.warn(
+                        msg="You have already registered. But not verified you email yet. Please verify it first."
+                    )
+
+                user = authenticate(username=username, password=password)
+
+                if user is None:
+                    return Message.error(
+                        msg="Your email or password is not correct. Try again."
+                    )
+
+            else:
+                uid = request.data["uid"]
+                token = request.data["token"]
+
+                if not models.LoginCode.objects.filter(uid=uid, token=token).exists():
+                    return Message.error(msg="You have entered wrong code. Try again.")
+
+                login_code = models.LoginCode.objects.filter(uid=uid, token=token)[0]
+
+                user = login_code.user
+
+                if not user.is_active:
+                    return Message.warn(
+                        msg="You have already registered. But not verified you email yet. Please verify it first."
+                    )
+
+                login_code.delete()
 
             return response.Response(
                 {
@@ -285,13 +352,13 @@ class TokenRefreshView(views.APIView):
 
 class ResetUserPassword(views.APIView):
     def create_uid(self):
-        uid = tokens.create_uid()
+        uid = tokens.generate_random_code()
         if models.ResetPasswordCode.objects.filter(uid=uid).exists():
             self.create_uid()
         return uid
 
     def create_token(self):
-        token = tokens.create_token()
+        token = tokens.generate_random_code()
         if models.ResetPasswordCode.objects.filter(token=token).exists():
             self.create_token()
         return token
@@ -361,13 +428,13 @@ class ResetUserPassword(views.APIView):
 
 class ResetUserEmail(views.APIView):
     def create_uid(self):
-        uid = tokens.create_uid()
+        uid = tokens.generate_random_code()
         if models.ResetEmailCode.objects.filter(uid=uid).exists():
             self.create_uid()
         return uid
 
     def create_token(self):
-        token = tokens.create_token()
+        token = tokens.generate_random_code()
         if models.ResetEmailCode.objects.filter(token=token).exists():
             self.create_token()
         return token
