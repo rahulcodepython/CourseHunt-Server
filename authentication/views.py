@@ -518,6 +518,8 @@ class ResetUserPassword(views.APIView):
 
 
 class ResetUserEmail(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def create_uid(self):
         uid = tokens.generate_random_code()
         if models.ResetEmailCode.objects.filter(uid=uid).exists():
@@ -532,23 +534,31 @@ class ResetUserEmail(views.APIView):
 
     def post(self, request):
         try:
-            if not check_authenticated_user(request.user):
-                return Message.error(msg="You are not authenticated yet. Try again.")
-
             new_email = request.data["email"]
 
             if models.ResetEmailCode.objects.filter(user=request.user).exists():
-                models.ResetEmailCode.objects.get(user=request.user).delete()
+                reset_email_code = models.ResetEmailCode.objects.get(user=request.user)
 
-            reset_email_code = models.ResetEmailCode.objects.create(
-                user=request.user, uid=self.create_uid(), token=self.create_token()
-            )
-            email.ResetEmailConfirmation(
-                uid=reset_email_code.uid,
-                token=reset_email_code.token,
-                email=new_email,
-                username=request.user.username,
-            )
+                email.ResetEmailConfirmation(
+                    uid=reset_email_code.uid,
+                    token=reset_email_code.token,
+                    email=new_email,
+                    username=request.user.username,
+                )
+
+            else:
+                uid = self.create_uid()
+                token = self.create_token()
+
+                email.ResetEmailConfirmation(
+                    uid=uid,
+                    token=token,
+                    email=new_email,
+                    username=request.user.username,
+                )
+                models.ResetEmailCode.objects.create(
+                    user=request.user, uid=uid, token=token, new_email=new_email
+                )
 
             return Message.success(msg="Reset Email link is sent to your email.")
 
@@ -557,12 +567,10 @@ class ResetUserEmail(views.APIView):
 
 
 class UpdateEmailView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request):
         try:
-            if not check_authenticated_user(request.user):
-                return Message.error(msg="You are not authenticated yet. Try again.")
-
-            new_email = request.data["email"]
             uid = request.data["uid"]
             token = request.data["token"]
 
@@ -577,7 +585,7 @@ class UpdateEmailView(views.APIView):
                 return Message.error(msg="You are not allowed to do this. Try again.")
 
             user = request.user
-            user.email = new_email
+            user.email = reset_email_code.new_email
             user.save()
 
             reset_email_code.delete()
