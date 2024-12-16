@@ -44,9 +44,10 @@ class ListCoursesView(views.APIView):
     def get(self, request):
         try:
             courses = models.Course.objects.all().filter(status="published")
-            # paginator = Paginator(courses, 10)
-            # page = request.GET.get("page")
-            # courses = paginator.get_page(page)
+            paginator = Paginator(courses, 2)
+            page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+            page = paginator.page(page_no)
+            courses = page.object_list
 
             if request.user.is_authenticated:
                 serializer = serializers.ListCoursesSerializer(
@@ -57,7 +58,18 @@ class ListCoursesView(views.APIView):
                     courses, many=True, context={"user": None}
                 )
 
-            return response.Response(serializer.data, status=status.HTTP_200_OK)
+            return response.Response(
+                {
+                    "results": serializer.data,
+                    "count": paginator.count,
+                    "next": (
+                        f"{BASE_API_URL}/course/list-course/?page={page.next_page_number()}"
+                        if page.has_next()
+                        else None
+                    ),
+                },
+                status=status.HTTP_200_OK,
+            )
 
         except Exception as e:
             return Message.error(str(e))
