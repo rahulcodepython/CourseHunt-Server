@@ -432,6 +432,8 @@ class TokenRefreshView(views.APIView):
 
 
 class ResetUserPassword(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def create_uid(self):
         uid = tokens.generate_random_code()
         if models.ResetPasswordCode.objects.filter(uid=uid).exists():
@@ -446,21 +448,32 @@ class ResetUserPassword(views.APIView):
 
     def get(self, request):
         try:
-            if not check_authenticated_user(request.user):
-                return Message.error(msg="You are not authenticated yet. Try again.")
-
             if models.ResetPasswordCode.objects.filter(user=request.user).exists():
-                models.ResetPasswordCode.objects.get(user=request.user).delete()
+                reset_password_code = models.ResetPasswordCode.objects.get(
+                    user=request.user
+                )
 
-            reset_password_code = models.ResetPasswordCode.objects.create(
-                user=request.user, uid=self.create_uid(), token=self.create_token()
-            )
-            email.ResetPasswordConfirmation(
-                uid=reset_password_code.uid,
-                token=reset_password_code.token,
-                email=request.user.email,
-                username=request.user.username,
-            )
+                email.ResetPasswordConfirmation(
+                    uid=reset_password_code.uid,
+                    token=reset_password_code.token,
+                    email=request.user.email,
+                    username=request.user.username,
+                )
+
+            else:
+                uid = self.create_uid()
+                token = self.create_token()
+
+                email.ResetPasswordConfirmation(
+                    uid=uid,
+                    token=token,
+                    email=request.user.email,
+                    username=request.user.username,
+                )
+
+                reset_password_code = models.ResetPasswordCode.objects.create(
+                    user=request.user, uid=uid, token=token
+                )
 
             return Message.success(msg="Reset Password link is sent to your email.")
 
@@ -469,11 +482,8 @@ class ResetUserPassword(views.APIView):
 
     def post(self, request):
         try:
-            if not check_authenticated_user(request.user):
-                return Message.error(msg="You are not authenticated yet. Try again.")
-
-            new_password = request.data["new_password"]
-            current_password = request.data["current_password"]
+            new_password = request.data["newPassword"]
+            current_password = request.data["oldPassword"]
             uid = request.data["uid"]
             token = request.data["token"]
 
@@ -486,10 +496,10 @@ class ResetUserPassword(views.APIView):
                 uid=uid, token=token
             )[0]
 
-            if reset_password_code.user != request.user:
-                return Message.error(msg="You are not allowed to do this. Try again.")
-
             user = request.user
+
+            if reset_password_code.user != user:
+                return Message.error(msg="You are not allowed to do this. Try again.")
 
             if not user.check_password(current_password):
                 return Message.error(

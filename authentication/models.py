@@ -88,7 +88,7 @@ class ResetPasswordCode(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     uid = models.CharField(default="", max_length=4)
     token = models.CharField(default="", max_length=4)
-    created_at = models.DateTimeField(auto_now_add=True)
+    # created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Reset Password Code"
@@ -102,7 +102,7 @@ class ResetEmailCode(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     uid = models.CharField(default="", max_length=4)
     token = models.CharField(default="", max_length=4)
-    created_at = models.DateTimeField(auto_now_add=True)
+    # created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Reset Email Code"
