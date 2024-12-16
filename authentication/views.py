@@ -6,6 +6,8 @@ from . import serializers, email, models, tokens
 import requests
 import uuid
 from django.core.cache import cache
+from datetime import datetime, timedelta
+from django.utils.timezone import localtime, now
 
 User = get_user_model()
 
@@ -44,6 +46,13 @@ def check_authenticated_user(user):
 def check_user_active(email: str) -> bool:
     user = User.objects.get(email=email)
     return user.is_active
+
+
+def check_time_difference(recorded_time) -> bool:
+    current_time = localtime(now())
+    parsed_recorded_time = localtime(recorded_time)
+    time_difference = current_time - parsed_recorded_time
+    return time_difference > timedelta(minutes=10)
 
 
 class UserViews(views.APIView):
@@ -224,7 +233,7 @@ class ResendActivateUserViews(views.APIView):
             return Message.error(f"{e}")
 
 
-class InitJWT(views.APIView):
+class SendLoginOTPView(views.APIView):
     def create_uid(self):
         uid = tokens.generate_random_code()
         if models.LoginCode.objects.filter(uid=uid).exists():
@@ -252,18 +261,24 @@ class InitJWT(views.APIView):
                 )
 
             if models.LoginCode.objects.filter(user=user).exists():
-                models.LoginCode.objects.get(user=user).delete()
+                login_code = models.LoginCode.objects.get(user=user)
+                email.LoginConfirmation(
+                    uid=login_code.uid,
+                    token=login_code.token,
+                    email=user.email,
+                    username=user.username,
+                )
+            else:
+                uid = self.create_uid()
+                token = self.create_token()
 
-            login_code = models.LoginCode.objects.create(
-                user=user, uid=self.create_uid(), token=self.create_token()
-            )
-
-            email.LoginConfirmation(
-                uid=login_code.uid,
-                token=login_code.token,
-                email=user.email,
-                username=user.username,
-            )
+                email.LoginConfirmation(
+                    uid=uid,
+                    token=token,
+                    email=user.email,
+                    username=user.username,
+                )
+                models.LoginCode.objects.create(user=user, uid=uid, token=token)
 
             return Message.success(msg="Login code is sent to your email.")
 
@@ -272,7 +287,60 @@ class InitJWT(views.APIView):
             return Message.error(f"{e}")
 
 
-class CreateJWT(views.APIView):
+class ResendLoginOTPView(views.APIView):
+    def create_uid(self):
+        uid = tokens.generate_random_code()
+        if models.LoginCode.objects.filter(uid=uid).exists():
+            self.create_uid()
+        return uid
+
+    def create_token(self):
+        token = tokens.generate_random_code()
+        if models.LoginCode.objects.filter(token=token).exists():
+            self.create_token()
+        return token
+
+    def post(self, request):
+        try:
+            user_email = request.data["email"]
+
+            if not User.objects.filter(email=user_email).exists():
+                return Message.error(msg="No such user is there. Try again.")
+
+            user = User.objects.get(email=user_email)
+
+            if not user.is_active:
+                return Message.warn(
+                    msg="You have already registered. But not verified you email yet. Please verify it first."
+                )
+
+            if models.LoginCode.objects.filter(user=user).exists():
+                login_code = models.LoginCode.objects.get(user=user)
+                email.LoginConfirmation(
+                    uid=login_code.uid,
+                    token=login_code.token,
+                    email=user.email,
+                    username=user.username,
+                )
+            else:
+                uid = self.create_uid()
+                token = self.create_token()
+
+                email.LoginConfirmation(
+                    uid=uid,
+                    token=token,
+                    email=user.email,
+                    username=user.username,
+                )
+                models.LoginCode.objects.create(user=user, uid=uid, token=token)
+
+            return Message.success(msg="Login code is again sent to your email.")
+
+        except Exception as e:
+            return Message.error(f"{e}")
+
+
+class CreateJWTView(views.APIView):
     def post(self, request):
         try:
             if settings.OTP_VERIFICATION_LOGIN is False:
@@ -304,6 +372,10 @@ class CreateJWT(views.APIView):
                     return Message.error(msg="You have entered wrong code. Try again.")
 
                 login_code = models.LoginCode.objects.filter(uid=uid, token=token)[0]
+
+                if check_time_difference(login_code.created_at):
+                    login_code.delete()
+                    return Message.error(msg="Your code is expired. Try again.")
 
                 user = login_code.user
 
