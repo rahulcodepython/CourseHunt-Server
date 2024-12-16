@@ -14,6 +14,7 @@ urlpatterns = [
     path("users/reset_password/", views.ResetUserPassword.as_view()),
     path("users/reset/email/", views.ResetUserEmail.as_view()),
     path("users/update-email/", views.UpdateEmailView.as_view()),
+    path("users/check-email/", views.CheckEmailView.as_view()),
     path(
         "github/auth/",
         views.github_auth_redirect.as_view(),

@@ -596,6 +596,34 @@ class UpdateEmailView(views.APIView):
             return Message.error(f"{e}")
 
 
+class CheckEmailView(views.APIView):
+    def post(self, request):
+        try:
+            email = request.data["email"]
+            print("Email", email)
+
+            if User.objects.filter(email__icontains=email).exists():
+                return Message.error(msg="Email is already taken. Try another one.")
+
+            return Message.success(msg="Email is available.")
+
+        except Exception as e:
+            return Message.error(f"{e}")
+
+
+class ListAllUser(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        try:
+            users = User.objects.all()
+            serialized_data = serializers.UserSerializer(users, many=True)
+            return response.Response(serialized_data.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Message.error(f"{e}")
+
+
 class github_auth_redirect(views.APIView):
     def get(self, request, format=None):
         state = str(uuid.uuid4())
@@ -789,16 +817,3 @@ class google_authenticate(views.APIView):
 
         else:
             return Message.error(msg="Failed to authenticate with Google")
-
-
-class ListAllUser(views.APIView):
-    permission_classes = [permissions.IsAdminUser]
-
-    def get(self, request):
-        try:
-            users = User.objects.all()
-            serialized_data = serializers.UserSerializer(users, many=True)
-            return response.Response(serialized_data.data, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Message.error(f"{e}")
