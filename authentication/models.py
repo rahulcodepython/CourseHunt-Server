@@ -51,6 +51,10 @@ class User(AbstractBaseUser, PermissionsMixin):
             Profile.objects.create(user=self)
         return self
 
+    def delete(self, *args, **kwargs):
+        Profile.objects.get(user=self).delete()
+        return super().delete(*args, **kwargs)
+
 
 class LoginCode(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)

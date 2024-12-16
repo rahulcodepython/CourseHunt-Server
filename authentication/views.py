@@ -105,15 +105,16 @@ class UserViews(views.APIView):
 
             user = serialized_data.save()
 
-            activation_code = models.ActivationCode.objects.create(
-                user=user, uid=self.create_uid(), token=self.create_token()
-            )
+            uid = self.create_uid()
+            token = self.create_token()
+
             email.ActivationEmail(
-                uid=activation_code.uid,
-                token=activation_code.token,
+                uid=uid,
+                token=token,
                 email=user.email,
                 username=user.username,
             )
+            models.ActivationCode.objects.create(user=user, uid=uid, token=token)
 
             return Message.create(
                 msg="Your account has been creates. At First verify it."
@@ -214,18 +215,26 @@ class ResendActivateUserViews(views.APIView):
                 )
 
             if models.ActivationCode.objects.filter(user=user).exists():
-                models.ActivationCode.objects.get(user=user).delete()
+                activation_code = models.ActivationCode.objects.get(user=user)
+                email.ActivationEmail(
+                    uid=activation_code.uid,
+                    token=activation_code.token,
+                    email=user.email,
+                    username=user.username,
+                )
+            else:
+                uid = self.create_uid()
+                token = self.create_token()
 
-            activation_code = models.ActivationCode.objects.create(
-                user=user, uid=self.create_uid(), token=self.create_token()
-            )
-
-            email.ActivationEmail(
-                uid=activation_code.uid,
-                token=activation_code.token,
-                email=user.email,
-                username=user.username,
-            )
+                email.ActivationEmail(
+                    uid=uid,
+                    token=token,
+                    email=user.email,
+                    username=user.username,
+                )
+                activation_code = models.ActivationCode.objects.create(
+                    user=user, uid=uid, token=token
+                )
 
             return Message.success(msg="Activation link is sent to your mail.")
 
