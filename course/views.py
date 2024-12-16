@@ -100,8 +100,11 @@ class PurchasedListCoursesView(views.APIView):
 
     def get(self, request):
         try:
-            profile = Profile.objects.get(user=request.user)
-            courses = profile.purchased_courses.all()
+            if request.user.is_superuser:
+                courses = models.Course.objects.all()
+            else:
+                profile = Profile.objects.get(user=request.user)
+                courses = profile.purchased_courses.all()
 
             paginator = Paginator(courses, 1)
             page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
@@ -193,11 +196,12 @@ class StudySingleCourseView(views.APIView):
 
     def get(self, request, course_id):
         try:
-            profile = Profile.objects.get(user=request.user)
             course = models.Course.objects.get(id=course_id)
 
-            if course not in profile.purchased_courses.all():
-                return Message.warn("You have not purchased this course")
+            if not request.user.is_superuser:
+                profile = Profile.objects.get(user=request.user)
+                if course not in profile.purchased_courses.all():
+                    return Message.warn("You have not purchased this course")
 
             serializer = serializers.StudySingleCourseSerializer(course)
 
