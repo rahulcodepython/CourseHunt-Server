@@ -17,12 +17,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True if os.getenv("DEBUG", "False") == "True" else False
+DEBUG = False
 
-ALLOWED_HOSTS = ["*"]
-
-# api/settings.py
-WSGI_APPLICATION = "server.wsgi.app"
+ALLOWED_HOSTS = ["*"] if DEBUG else ["127.0.0.1"]
 
 # Application definition
 INSTALLED_APPS = [
@@ -102,6 +99,14 @@ DATABASES = {
     }
 }
 
+# Cache Configuration
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "my_cache_table",
+    }
+}
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -119,7 +124,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-# DATE_INPUT_FORMATS = ["%d-%m-%Y"]
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Kolkata"
 USE_I18N = True
@@ -140,9 +144,11 @@ REST_FRAMEWORK = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = []
+CORS_ALLOWED_ORIGINS = (
+    [] if DEBUG else ["http://localhost:3000", "http://127.0.0.1:3000"]
+)
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 # Auth Configuration
 AUTH_CONFIG = {"LOGIN_FIELD": "username"}
@@ -195,3 +201,10 @@ GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "")
 # RAZORPAY Configuration
 RAZORPAY_API_KEY = os.getenv("RAZORPAY_API_KEY", "")
 RAZORPAY_SECRET_KEY = os.getenv("RAZORPAY_SECRET_KEY", "")
+
+# Deployment Configuration
+SECURE_HSTS_SECONDS = 31536000  # 1 year in seconds
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
