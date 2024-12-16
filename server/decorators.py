@@ -1,4 +1,4 @@
-from rest_framework import response
+from .message import Message
 
 
 def catch_exception(func):
@@ -6,6 +6,6 @@ def catch_exception(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            return response.Response(str(e))
+            return Message.error(str(e))
 
     return wrapper

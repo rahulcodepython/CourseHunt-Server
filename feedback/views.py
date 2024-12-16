@@ -55,7 +55,7 @@ class ListFeedback(views.APIView):
         cache.set(f"feedbacks_{page_no}", response_data)
 
         return response.Response(
-            response,
+            response_data,
             status=status.HTTP_200_OK,
         )
 

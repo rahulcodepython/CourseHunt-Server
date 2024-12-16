@@ -1,20 +1,31 @@
 version: '3'
 services:
-  db:
-    image: postgres
-    restart: always
-    volumes:
-      - ./data/db:/var/lib/postgresql/data
-    ports:
-      - 5432:5432 # make sure you don't have another container running on 5432
+    db:
+        image: postgres
+        restart: always
+        volumes:
+            - ./data/db:/var/lib/postgresql/data
+        ports:
+            - "5432:5432" # Ensure no other service is running on this port
+        environment:
+            - POSTGRES_DB=${DB_NAME}
+            - POSTGRES_USER=${DB_USER}
+            - POSTGRES_PASSWORD=${DB_PASSWORD}
 
-    environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=rahul
-      - POSTGRES_PASSWORD=admin
-
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080
+    adminer:
+        image: adminer:4.8.1
+        restart: always
+        ports:
+            - "8080:8080"
+    # backend:
+    #     build: .
+    #     container_name: coursera-backend-app
+    #     image: coursera-backend-image
+    #     restart: always
+    #     env_file:
+    #         - .env
+    #     ports:
+    #         - "8000:8000"
+    #     depends_on:
+    #         - db
+    #     command: gunicorn server.wsgi:application --bind 0.0.0.0:8000

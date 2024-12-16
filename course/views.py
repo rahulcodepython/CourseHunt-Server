@@ -57,7 +57,6 @@ class ListCoursesView(views.APIView):
         courses = page.object_list
 
         response_data = {
-            "results": serializer.data,
             "count": paginator.count,
             "next": (
                 f"{BASE_API_URL}/course/list-course/?page={page.next_page_number()}"
@@ -70,6 +69,11 @@ class ListCoursesView(views.APIView):
             serializer = serializers.ListCoursesSerializer(
                 courses, many=True, context={"user": request.user}
             )
+
+            response_data = {
+                "results": serializer.data,
+                **response_data,
+            }
             cache.set(
                 f"list_all_published_courses_{request.user}_page_{page_no}",
                 response_data,
@@ -79,6 +83,11 @@ class ListCoursesView(views.APIView):
             serializer = serializers.ListCoursesSerializer(
                 courses, many=True, context={"user": None}
             )
+
+            response_data = {
+                "results": serializer.data,
+                **response_data,
+            }
             cache.set(
                 f"list_all_published_courses_anonymous_page_{page_no}",
                 response_data,
@@ -212,12 +221,18 @@ class EditCourseView(views.APIView):
 
         serializer.save()
 
+        if cache.get(f"edit_course_{course_id}"):
+            cache.delete(f"edit_course_{course_id}")
+
         return Message.success("Course updated successfully")
 
     @catch_exception
     def delete(self, request, course_id):
         course = models.Course.objects.get(id=course_id)
         course.delete()
+
+        if cache.get(f"edit_course_{course_id}"):
+            cache.delete(f"edit_course_{course_id}")
 
         return Message.success("Course deleted successfully")
 
