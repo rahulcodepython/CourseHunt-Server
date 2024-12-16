@@ -19,7 +19,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"] if DEBUG else ["127.0.0.1"]
+ALLOWED_HOSTS = ["*"]
 
 # Application definition
 INSTALLED_APPS = [
@@ -144,11 +144,8 @@ REST_FRAMEWORK = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = (
-    [] if DEBUG else ["http://localhost:3000", "http://127.0.0.1:3000"]
-)
-
-CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOWED_ORIGINS = []
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Auth Configuration
 AUTH_CONFIG = {"LOGIN_FIELD": "username"}
@@ -167,12 +164,12 @@ COMPANY_NAME = "Coursera"
 SEND_ACTIVATION_EMAIL = True
 SEND_RESET_PASSWORD_CONFIRMATION_EMAIL = True
 SEND_RESET_EMAIL_CONFIRMATION_EMAIL = True
-SEND_LOGIN_CONFIRMATION_EMAIL = True
+SEND_LOGIN_CONFIRMATION_EMAIL = False
 
 # JWT Configuration
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=5),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=4),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": False,
@@ -201,10 +198,3 @@ GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "")
 # RAZORPAY Configuration
 RAZORPAY_API_KEY = os.getenv("RAZORPAY_API_KEY", "")
 RAZORPAY_SECRET_KEY = os.getenv("RAZORPAY_SECRET_KEY", "")
-
-# Deployment Configuration
-SECURE_HSTS_SECONDS = 31536000  # 1 year in seconds
-SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
-SECURE_HSTS_PRELOAD = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
