@@ -4,11 +4,8 @@ from . import serializers, models
 from authentication.models import Profile
 from server.decorators import catch_exception
 from server.message import Message
-from django.conf import settings
 from django.core.cache import cache
-
-
-BASE_API_URL = settings.BASE_API_URL
+from server.utils import pagination_next_url_builder
 
 
 class CreateCourseView(views.APIView):
@@ -58,11 +55,7 @@ class ListCoursesView(views.APIView):
 
         response_data = {
             "count": paginator.count,
-            "next": (
-                f"{BASE_API_URL}/course/list-course/?page={page.next_page_number()}"
-                if page.has_next()
-                else None
-            ),
+            "next": pagination_next_url_builder(page, "course/list-course/"),
         }
 
         if request.user.is_authenticated:
@@ -124,11 +117,7 @@ class AdminListCoursesView(views.APIView):
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": (
-                f"{BASE_API_URL}/course/admin-list-course/?page={page.next_page_number()}"
-                if page.has_next()
-                else None
-            ),
+            "next": pagination_next_url_builder(page, "course/admin-list-course/"),
         }
 
         cache.set(
@@ -172,11 +161,7 @@ class PurchasedListCoursesView(views.APIView):
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": (
-                f"{BASE_API_URL}/course/purchased-courses/?page={page.next_page_number()}"
-                if page.has_next()
-                else None
-            ),
+            "next": pagination_next_url_builder(page, "course/purchased-courses/"),
         }
 
         cache.set(

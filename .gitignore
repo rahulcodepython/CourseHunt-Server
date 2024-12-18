@@ -11,3 +11,4 @@ data
 /course/migrations/*
 !/course/migrations/__init__.py
 /course/migrations/**/__pycache__/
+static

@@ -6,8 +6,7 @@ from server.decorators import catch_exception
 from server.message import Message
 from django.conf import settings
 from django.core.cache import cache
-
-BASE_API_URL = settings.BASE_API_URL
+from server.utils import pagination_next_url_builder
 
 
 class CreateFeedback(views.APIView):
@@ -45,11 +44,7 @@ class ListFeedback(views.APIView):
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": (
-                f"{BASE_API_URL}/feedback/list/?page={page.next_page_number()}"
-                if page.has_next()
-                else None
-            ),
+            "next": pagination_next_url_builder(page, "feedback/list/"),
         }
 
         cache.set(f"feedbacks_{page_no}", response_data)

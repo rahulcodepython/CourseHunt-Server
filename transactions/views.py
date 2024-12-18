@@ -9,8 +9,7 @@ from django.utils import timezone
 from django.core.cache import cache
 from server.message import Message
 from server.decorators import catch_exception
-
-BASE_API_URL = settings.BASE_API_URL
+from server.utils import pagination_next_url_builder
 
 razorpay_client = razorpay.Client(
     auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_SECRET_KEY)
@@ -236,11 +235,7 @@ class ListCouponView(views.APIView):
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": (
-                f"{BASE_API_URL}/transactions/list-coupon-code/?page={page.next_page_number()}"
-                if page.has_next()
-                else None
-            ),
+            "next": pagination_next_url_builder(page, "transactions/list-coupon-code/"),
         }
 
         cache.set(f"coupons_{page_no}", response_data)
@@ -309,10 +304,8 @@ class ListTransactionsView(views.APIView):
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": (
-                f"{BASE_API_URL}/transactions/list-transactions/?page={page.next_page_number()}"
-                if page.has_next()
-                else None
+            "next": pagination_next_url_builder(
+                page, "transactions/list-transactions/"
             ),
         }
 
@@ -345,10 +338,8 @@ class ListSelfTransactionsView(views.APIView):
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": (
-                f"{BASE_API_URL}/transactions/list-self-transactions/?page={page.next_page_number()}"
-                if page.has_next()
-                else None
+            "next": pagination_next_url_builder(
+                page, "transactions/list-self-transactions/"
             ),
         }
 

@@ -78,9 +78,7 @@ WSGI_APPLICATION = "server.wsgi.application"
 # Database
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv(
-            "DB_ENGINE",
-        ),
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv(
             "DB_NAME",
         ),
@@ -90,12 +88,8 @@ DATABASES = {
         "PASSWORD": os.getenv(
             "DB_PASSWORD",
         ),
-        "HOST": os.getenv(
-            "DB_HOST",
-        ),
-        "PORT": os.getenv(
-            "DB_PORT",
-        ),
+        "HOST": "localhost",
+        "PORT": "5432",
     }
 }
 
@@ -131,7 +125,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "static"
+STATIC_ROOT = BASE_DIR.parent / "static"
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

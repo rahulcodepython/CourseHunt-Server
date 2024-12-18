@@ -12,17 +12,24 @@ import random
 import string
 from server.message import Message
 from server.decorators import catch_exception
+from server.utils import redirect_uri_builder
+from typing import TypedDict
+
+
+class TokenDict(TypedDict):
+    refresh: str
+    access: str
 
 
 User = get_user_model()
 
 
-def generate_random_code(length=4):
+def generate_random_code(length=4) -> str:
     characters = string.ascii_letters + string.digits
     return "".join(random.choices(characters, k=length))
 
 
-def get_tokens_for_user(user):
+def get_tokens_for_user(user: models.User) -> TokenDict:
     refresh = RefreshToken.for_user(user)
 
     return {
@@ -31,7 +38,7 @@ def get_tokens_for_user(user):
     }
 
 
-def check_email_exists(email):
+def check_email_exists(email: str) -> bool:
     return User.objects.filter(email=email).exists()
 
 
@@ -48,17 +55,17 @@ def check_time_difference(recorded_time) -> bool:
 
 
 class UserViews(views.APIView):
-    def check_authenticated_user(self, user):
+    def check_authenticated_user(self, user: models.User) -> bool:
         return user.is_authenticated
 
-    def create_uid(self) -> int:
-        uid: int = generate_random_code()
+    def create_uid(self) -> str:
+        uid: str = generate_random_code()
         if models.ActivationCode.objects.filter(uid=uid).exists():
             self.create_uid()
         return uid
 
-    def create_token(self) -> int:
-        token: int = generate_random_code()
+    def create_token(self) -> str:
+        token: str = generate_random_code()
         if models.ActivationCode.objects.filter(token=token).exists():
             self.create_token()
         return token
@@ -102,7 +109,7 @@ class UserViews(views.APIView):
 
         user = serialized_data.save()
 
-        uid = self.create_uid()
+        uid: str = self.create_uid()
         token = self.create_token()
 
         email.ActivationEmail(
@@ -146,7 +153,7 @@ class UserViews(views.APIView):
 class ActivateUserViews(views.APIView):
     @catch_exception
     def post(self, request):
-        uid = request.data["uid"]
+        uid: str = request.data["uid"]
         token = request.data["token"]
         user = (
             models.ActivationCode.objects.filter(uid=uid, token=token)[0].user
@@ -171,14 +178,14 @@ class ActivateUserViews(views.APIView):
 
 
 class ResendActivateUserViews(views.APIView):
-    def create_uid(self):
-        uid = generate_random_code()
+    def create_uid(self) -> str:
+        uid: str = generate_random_code()
         if models.ActivationCode.objects.filter(uid=uid).exists():
             self.create_uid()
         return uid
 
-    def create_token(self):
-        token = generate_random_code()
+    def create_token(self) -> str:
+        token: str = generate_random_code()
         if models.ActivationCode.objects.filter(token=token).exists():
             self.create_token()
         return token
@@ -206,7 +213,7 @@ class ResendActivateUserViews(views.APIView):
                 username=user.username,
             )
         else:
-            uid = self.create_uid()
+            uid: str = self.create_uid()
             token = self.create_token()
 
             email.ActivationEmail(
@@ -223,14 +230,14 @@ class ResendActivateUserViews(views.APIView):
 
 
 class SendLoginOTPView(views.APIView):
-    def create_uid(self):
-        uid = generate_random_code()
+    def create_uid(self) -> str:
+        uid: str = generate_random_code()
         if models.LoginCode.objects.filter(uid=uid).exists():
             self.create_uid()
         return uid
 
-    def create_token(self):
-        token = generate_random_code()
+    def create_token(self) -> str:
+        token: str = generate_random_code()
         if models.LoginCode.objects.filter(token=token).exists():
             self.create_token()
         return token
@@ -258,7 +265,7 @@ class SendLoginOTPView(views.APIView):
                 username=user.username,
             )
         else:
-            uid = self.create_uid()
+            uid: str = self.create_uid()
             token = self.create_token()
 
             email.LoginConfirmation(
@@ -273,14 +280,14 @@ class SendLoginOTPView(views.APIView):
 
 
 class ResendLoginOTPView(views.APIView):
-    def create_uid(self):
-        uid = generate_random_code()
+    def create_uid(self) -> str:
+        uid: str = generate_random_code()
         if models.LoginCode.objects.filter(uid=uid).exists():
             self.create_uid()
         return uid
 
-    def create_token(self):
-        token = generate_random_code()
+    def create_token(self) -> str:
+        token: str = generate_random_code()
         if models.LoginCode.objects.filter(token=token).exists():
             self.create_token()
         return token
@@ -308,7 +315,7 @@ class ResendLoginOTPView(views.APIView):
                 username=user.username,
             )
         else:
-            uid = self.create_uid()
+            uid: str = self.create_uid()
             token = self.create_token()
 
             email.LoginConfirmation(
@@ -348,7 +355,7 @@ class CreateJWTView(views.APIView):
                 )
 
         else:
-            uid = request.data["uid"]
+            uid: str = request.data["uid"]
             token = request.data["token"]
 
             if not models.LoginCode.objects.filter(uid=uid, token=token).exists():
@@ -404,14 +411,14 @@ class TokenRefreshView(views.APIView):
 class ResetUserPassword(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def create_uid(self):
-        uid = generate_random_code()
+    def create_uid(self) -> str:
+        uid: str = generate_random_code()
         if models.ResetPasswordCode.objects.filter(uid=uid).exists():
             self.create_uid()
         return uid
 
-    def create_token(self):
-        token = generate_random_code()
+    def create_token(self) -> str:
+        token: str = generate_random_code()
         if models.ResetPasswordCode.objects.filter(token=token).exists():
             self.create_token()
         return token
@@ -431,7 +438,7 @@ class ResetUserPassword(views.APIView):
             )
 
         else:
-            uid = self.create_uid()
+            uid: str = self.create_uid()
             token = self.create_token()
 
             email.ResetPasswordConfirmation(
@@ -451,7 +458,7 @@ class ResetUserPassword(views.APIView):
     def post(self, request):
         new_password = request.data["newPassword"]
         current_password = request.data["oldPassword"]
-        uid = request.data["uid"]
+        uid: str = request.data["uid"]
         token = request.data["token"]
 
         if not models.ResetPasswordCode.objects.filter(uid=uid, token=token).exists():
@@ -480,14 +487,14 @@ class ResetUserPassword(views.APIView):
 class ResetUserEmail(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def create_uid(self):
-        uid = generate_random_code()
+    def create_uid(self) -> str:
+        uid: str = generate_random_code()
         if models.ResetEmailCode.objects.filter(uid=uid).exists():
             self.create_uid()
         return uid
 
-    def create_token(self):
-        token = generate_random_code()
+    def create_token(self) -> str:
+        token: str = generate_random_code()
         if models.ResetEmailCode.objects.filter(token=token).exists():
             self.create_token()
         return token
@@ -507,7 +514,7 @@ class ResetUserEmail(views.APIView):
             )
 
         else:
-            uid = self.create_uid()
+            uid: str = self.create_uid()
             token = self.create_token()
 
             email.ResetEmailConfirmation(
@@ -528,7 +535,7 @@ class UpdateEmailView(views.APIView):
 
     @catch_exception
     def post(self, request):
-        uid = request.data["uid"]
+        uid: str = request.data["uid"]
         token = request.data["token"]
 
         if not models.ResetEmailCode.objects.filter(uid=uid, token=token).exists():
@@ -584,12 +591,9 @@ class github_auth_redirect(views.APIView):
 
         cache.set(f"github_oauth_state_{state}", True, timeout=300)
 
-        redirect_uri = settings.GITHUB_REDIRECT_URI
-        app_url = settings.BASE_APP_URL
-
         github_auth_url = (
             f"https://github.com/login/oauth/authorize/?client_id={settings.GITHUB_CLIENT_ID}"
-            f"&redirect_uri={app_url + '/' + redirect_uri}&scope=user&state={state}"
+            f"&redirect_uri={redirect_uri_builder("github")}&scope=user&state={state}"
         )
         return response.Response({"url": github_auth_url}, status=status.HTTP_200_OK)
 
@@ -615,7 +619,7 @@ class github_authenticate(views.APIView):
             "client_id": settings.GITHUB_CLIENT_ID,
             "client_secret": settings.GITHUB_CLIENT_SECRET,
             "code": code,
-            "redirect_uri": settings.BASE_APP_URL + "/" + settings.GITHUB_REDIRECT_URI,
+            "redirect_uri": redirect_uri_builder("github"),
         }
 
         response_github = requests.post(
@@ -684,11 +688,9 @@ class google_auth_redirect(views.APIView):
 
     @catch_exception
     def get(self, request, format=None):
-        redirect_uri = settings.GOOGLE_REDIRECT_URI
-        app_url = settings.BASE_APP_URL
 
         google_auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?client_id={
-            settings.GOOGLE_CLIENT_ID}&redirect_uri={app_url + '/' + redirect_uri}&scope=email%20profile&response_type=code"
+            settings.GOOGLE_CLIENT_ID}&redirect_uri={redirect_uri_builder("google")}&scope=email%20profile&response_type=code"
         return response.Response({"url": google_auth_url}, status=status.HTTP_200_OK)
 
 
@@ -705,7 +707,7 @@ class google_authenticate(views.APIView):
             "code": code,
             "client_id": settings.GOOGLE_CLIENT_ID,
             "client_secret": settings.GOOGLE_CLIENT_SECRET,
-            "redirect_uri": settings.BASE_APP_URL + "/" + settings.GOOGLE_REDIRECT_URI,
+            "redirect_uri": redirect_uri_builder("google"),
             "grant_type": "authorization_code",
         }
 

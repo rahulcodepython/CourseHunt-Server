@@ -15,11 +15,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
+SITE_ID = 1
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", "[::1]"]
+ALLOWED_HOSTS = ["localhost", "backend", "127.0.0.1"]
 
 # Application definition
 INSTALLED_APPS = [
@@ -78,9 +79,7 @@ WSGI_APPLICATION = "server.wsgi.application"
 # Database
 DATABASES = {
     "default": {
-        "ENGINE": os.getenv(
-            "DB_ENGINE",
-        ),
+        "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv(
             "DB_NAME",
         ),
@@ -90,12 +89,8 @@ DATABASES = {
         "PASSWORD": os.getenv(
             "DB_PASSWORD",
         ),
-        "HOST": os.getenv(
-            "DB_HOST_PRODUCTION",
-        ),
-        "PORT": os.getenv(
-            "DB_PORT",
-        ),
+        "HOST": "db",
+        "PORT": "5432",
     }
 }
 
@@ -131,7 +126,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "static"
+STATIC_ROOT = BASE_DIR.parent / "static"
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -144,7 +139,11 @@ REST_FRAMEWORK = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
+CORS_ALLOWED_ORIGINS = ["http://localhost", "http://localhost:80"]
+
+# If you're using Django >= 3.10, use this instead:
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
+# CORS_ALLOW_ALL_ORIGINS = True
 
 # Auth Configuration
 AUTH_CONFIG = {"LOGIN_FIELD": "username"}
@@ -199,8 +198,8 @@ RAZORPAY_API_KEY = os.getenv("RAZORPAY_API_KEY", "")
 RAZORPAY_SECRET_KEY = os.getenv("RAZORPAY_SECRET_KEY", "")
 
 # Deployment Configuration
-SECURE_HSTS_SECONDS = 31536000  # 1 year in seconds
-SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
-SECURE_HSTS_PRELOAD = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+# SECURE_HSTS_SECONDS = 31536000  # 1 year in seconds
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+# SECURE_HSTS_PRELOAD = not DEBUG
+# SESSION_COOKIE_SECURE = not DEBUG
+# CSRF_COOKIE_SECURE = not DEBUG
