@@ -3,10 +3,11 @@ from . import views
 
 urlpatterns = [
     path("list/", views.ListAllBlogsView.as_view()),
-    # path("create/", views.CreateBlog.as_view()),
-    # path("update/<int:pk>/", views.UpdateBlog.as_view()),
-    # path("read/<int:pk>/", views.ReadBlog.as_view()),
-    # path("create-comment/", views.CreateComment.as_view()),
-    # path("update-comment/<int:pk>/", views.UpdateComment.as_view()),
-    # path("like-blog/<int:pk>/", views.LikeBlog.as_view()),
+    path("list-admin/", views.AdminListAllBlogsView.as_view()),
+    path("read/<str:blog_id>/", views.ReadBlogView.as_view()),
+    path("create-comment/", views.CreateCommentView.as_view()),
+    path("like-blog/<str:blog_id>/", views.LikeBlogView.as_view()),
+    path("create/", views.CreateBlogView.as_view()),
+    path("update/<str:blog_id>/", views.UpdateBlogView.as_view()),
+    path("edit-comment/<str:comment_id>/", views.UpdateComment.as_view()),
 ]
