@@ -28,26 +28,27 @@ class ListFeedback(views.APIView):
 
     @catch_exception
     def get(self, request):
-        page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+        page_no = request.GET.get("page", 1)
 
-        if cache.get(f"feedbacks_{page_no}"):
-            feedbacks = cache.get(f"feedbacks_{page_no}")
-            return response.Response(feedbacks, status=status.HTTP_200_OK)
+        cache_key = f"feedbacks_{page_no}"
+
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         feedbacks = models.Feedback.objects.all().order_by("-id")
         paginator = Paginator(feedbacks, 1)
         page = paginator.page(page_no)
-        feedbacks = page.object_list
 
-        serializer = serializers.FeedbackSerializer(feedbacks, many=True)
+        serializer = serializers.FeedbackSerializer(page, many=True)
 
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": pagination_next_url_builder(page, "feedback/list/"),
+            "next": pagination_next_url_builder(page, request.path),
         }
 
-        cache.set(f"feedbacks_{page_no}", response_data)
+        cache.set(cache_key, response_data, timeout=60)
 
         return response.Response(
             response_data,

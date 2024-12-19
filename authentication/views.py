@@ -79,12 +79,14 @@ class UserViews(views.APIView):
         if not self.check_authenticated_user(request.user):
             return Message.error(msg="You are not authenticated yet. Try again.")
 
-        if cache.get(f"login_{request.user.username}"):
-            response_data = cache.get(f"login_{request.user.username}")
-            return response.Response(response_data, status=status.HTTP_200_OK)
+        cache_key = f"login_{request.user.username}"
+        cached_data = cache.get(cache_key)
+
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         serialized_data = serializers.UserSerializer(request.user).data
-        cache.set(f"login_{request.user.username}", serialized_data, timeout=300)
+        cache.set(cache_key, serialized_data)
         return response.Response(serialized_data, status=status.HTTP_200_OK)
 
     @catch_exception
@@ -580,13 +582,15 @@ class ListAllUser(views.APIView):
 
     @catch_exception
     def get(self, request):
-        if cache.get("all_users"):
-            users = cache.get("all_users")
-            return response.Response(users, status=status.HTTP_200_OK)
+        cache_key = "all_users"
+        cached_data = cache.get(cache_key)
+
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         users = User.objects.all()
         serialized_data = serializers.UserSerializer(users, many=True).data
-        cache.set("all_users", serialized_data, timeout=300)
+        cache.set(cache_key, serialized_data, timeout=300)
         return response.Response(serialized_data, status=status.HTTP_200_OK)
 
 

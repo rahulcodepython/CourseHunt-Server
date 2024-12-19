@@ -25,67 +25,36 @@ class CreateCourseView(views.APIView):
 
 class ListCoursesView(views.APIView):
 
+    def get_cache_key(self, request, page_no):
+        if request.user.is_authenticated:
+            return f"list_all_published_courses_{request.user}_page_{page_no}"
+        return f"list_all_published_courses_anonymous_page_{page_no}"
+
     @catch_exception
     def get(self, request):
-        page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+        page_no = request.GET.get("page", 1)
 
-        if request.user.is_authenticated:
-            if cache.get(f"list_all_published_courses_{request.user}_page_{page_no}"):
-                response_data = cache.get(
-                    f"list_all_published_courses_{request.user}_page_{page_no}"
-                )
-                return response.Response(
-                    response_data,
-                    status=status.HTTP_200_OK,
-                )
-        else:
-            if cache.get(f"list_all_published_courses_anonymous_page_{page_no}"):
-                response_data = cache.get(
-                    f"list_all_published_courses_anonymous_page_{page_no}"
-                )
-                return response.Response(
-                    response_data,
-                    status=status.HTTP_200_OK,
-                )
+        cached_data = cache.get(self.get_cache_key(request, page_no))
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         courses = models.Course.objects.all().filter(status="published").order_by("-id")
         paginator = Paginator(courses, 2)
         page = paginator.page(page_no)
-        courses = page.object_list
+
+        serializer = serializers.ListCoursesSerializer(
+            page,
+            many=True,
+            context={"user": request.user if request.user.is_authenticated else None},
+        )
 
         response_data = {
+            "results": serializer.data,
             "count": paginator.count,
-            "next": pagination_next_url_builder(page, "course/list-course/"),
+            "next": pagination_next_url_builder(page, request.path),
         }
 
-        if request.user.is_authenticated:
-            serializer = serializers.ListCoursesSerializer(
-                courses, many=True, context={"user": request.user}
-            )
-
-            response_data = {
-                "results": serializer.data,
-                **response_data,
-            }
-            cache.set(
-                f"list_all_published_courses_{request.user}_page_{page_no}",
-                response_data,
-                timeout=60,
-            )
-        else:
-            serializer = serializers.ListCoursesSerializer(
-                courses, many=True, context={"user": None}
-            )
-
-            response_data = {
-                "results": serializer.data,
-                **response_data,
-            }
-            cache.set(
-                f"list_all_published_courses_anonymous_page_{page_no}",
-                response_data,
-                timeout=60,
-            )
+        cache.set(self.get_cache_key(request, page_no), response_data, timeout=60)
 
         return response.Response(
             response_data,
@@ -98,31 +67,27 @@ class AdminListCoursesView(views.APIView):
 
     @catch_exception
     def get(self, request):
-        page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+        page_no = request.GET.get("page", 1)
 
-        if cache.get(f"list_all_courses_for_admin_page_{page_no}"):
-            response_data = cache.get(f"list_all_courses_for_admin_page_{page_no}")
-            return response.Response(
-                response_data,
-                status=status.HTTP_200_OK,
-            )
+        cache_key = f"list_all_courses_for_admin_page_{page_no}"
+
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         courses = models.Course.objects.all().order_by("-id")
         paginator = Paginator(courses, 2)
         page = paginator.page(page_no)
-        courses = page.object_list
 
-        serializer = serializers.ListCoursesAdminDashboardSerializer(courses, many=True)
+        serializer = serializers.ListCoursesAdminDashboardSerializer(page, many=True)
 
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": pagination_next_url_builder(page, "course/admin-list-course/"),
+            "next": pagination_next_url_builder(page, request.path),
         }
 
-        cache.set(
-            f"list_all_courses_for_admin_page_{page_no}", response_data, timeout=60
-        )
+        cache.set(cache_key, response_data, timeout=60)
 
         return response.Response(
             response_data,
@@ -135,16 +100,13 @@ class PurchasedListCoursesView(views.APIView):
 
     @catch_exception
     def get(self, request):
-        page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+        page_no = request.GET.get("page", 1)
 
-        if cache.get(f"list_all_purchased_courses_{request.user}_page_{page_no}"):
-            response_data = cache.get(
-                f"list_all_purchased_courses_{request.user}_page_{page_no}"
-            )
-            return response.Response(
-                response_data,
-                status=status.HTTP_200_OK,
-            )
+        cache_key = f"list_all_purchased_courses_{request.user}_page_{page_no}"
+
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         if request.user.is_superuser:
             courses = models.Course.objects.all().order_by("-id")
@@ -154,21 +116,16 @@ class PurchasedListCoursesView(views.APIView):
 
         paginator = Paginator(courses, 1)
         page = paginator.page(page_no)
-        courses = page.object_list
 
-        serializer = serializers.ListCoursesDashboardSerializer(courses, many=True)
+        serializer = serializers.ListCoursesDashboardSerializer(page, many=True)
 
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": pagination_next_url_builder(page, "course/purchased-courses/"),
+            "next": pagination_next_url_builder(page, request.path),
         }
 
-        cache.set(
-            f"list_all_purchased_courses_{request.user}_page_{page_no}",
-            response_data,
-            timeout=60,
-        )
+        cache.set(cache_key, response_data, timeout=60)
 
         return response.Response(
             response_data,
@@ -179,17 +136,19 @@ class PurchasedListCoursesView(views.APIView):
 class EditCourseView(views.APIView):
     permission_classes = [permissions.IsAdminUser]
 
+    def get_cache_key(self, course_id):
+        return f"edit_course_{course_id}"
+
     @catch_exception
     def get(self, request, course_id):
-        if cache.get(f"edit_course_{course_id}"):
-            response_data = cache.get(f"edit_course_{course_id}")
-            return response.Response(
-                response_data,
-                status=status.HTTP_200_OK,
-            )
+
+        cached_data = cache.get(f"edit_course_{course_id}")
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         course = models.Course.objects.get(id=course_id)
         serializer = serializers.CreateCourseSerializer(course)
+
         cache.set(f"edit_course_{course_id}", serializer.data, timeout=60)
 
         return response.Response(serializer.data, status=status.HTTP_200_OK)
@@ -206,8 +165,8 @@ class EditCourseView(views.APIView):
 
         serializer.save()
 
-        if cache.get(f"edit_course_{course_id}"):
-            cache.delete(f"edit_course_{course_id}")
+        if cache.get(self.get_cache_key(course_id)):
+            cache.delete(self.get_cache_key(course_id))
 
         return Message.success("Course updated successfully")
 
@@ -216,8 +175,8 @@ class EditCourseView(views.APIView):
         course = models.Course.objects.get(id=course_id)
         course.delete()
 
-        if cache.get(f"edit_course_{course_id}"):
-            cache.delete(f"edit_course_{course_id}")
+        if cache.get(self.get_cache_key(course_id)):
+            cache.delete(self.get_cache_key(course_id))
 
         return Message.success("Course deleted successfully")
 
@@ -244,66 +203,47 @@ class StudySingleCourseView(views.APIView):
 
     @catch_exception
     def get(self, request, course_id):
-        if cache.get(f"study_single_course_{course_id}"):
-            response_data = cache.get(f"study_single_course_{course_id}")
-            return response.Response(
-                response_data,
-                status=status.HTTP_200_OK,
-            )
+        cache_key = f"study_single_course_{course_id}"
+
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         course = models.Course.objects.get(id=course_id)
 
         if not request.user.is_superuser:
             profile = Profile.objects.get(user=request.user)
+
             if course not in profile.purchased_courses.all():
                 return Message.warn("You have not purchased this course")
 
         serializer = serializers.StudySingleCourseSerializer(course)
-        cache.set(f"study_single_course_{course_id}", serializer.data, timeout=60)
+
+        cache.set(cache_key, serializer.data, timeout=60)
 
         return response.Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class DetailSingleCourseView(views.APIView):
 
+    def get_cache_key(self, course_id, request):
+        if request.user.is_authenticated:
+            return f"detail_single_course_{course_id}_{request.user}"
+        return f"detail_single_course_{course_id}_anonymous"
+
     @catch_exception
     def get(self, request, course_id):
-        if request.user.is_authenticated:
-            if cache.get(f"detail_single_course_{course_id}_{request.user}"):
-                response_data = cache.get(
-                    f"detail_single_course_{course_id}_{request.user}"
-                )
-                return response.Response(
-                    response_data,
-                    status=status.HTTP_200_OK,
-                )
-        else:
-            if cache.get(f"detail_single_course_{course_id}_anonymous"):
-                response_data = cache.get(f"detail_single_course_{course_id}_anonymous")
-                return response.Response(
-                    response_data,
-                    status=status.HTTP_200_OK,
-                )
+        cached_data = cache.get(self.get_cache_key(course_id, request))
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         course = models.Course.objects.get(id=course_id)
 
-        if request.user.is_authenticated:
-            serializer = serializers.DetailSingleCourseSerializer(
-                course, context={"user": request.user}
-            )
-            cache.set(
-                f"detail_single_course_{course_id}_{request.user}",
-                serializer.data,
-                timeout=60,
-            )
-        else:
-            serializer = serializers.DetailSingleCourseSerializer(
-                course, context={"user": None}
-            )
-            cache.set(
-                f"detail_single_course_{course_id}_anonymous",
-                serializer.data,
-                timeout=60,
-            )
+        serializer = serializers.DetailSingleCourseSerializer(
+            course,
+            context={"user": request.user if request.user.is_authenticated else None},
+        )
+
+        cache.set(self.get_cache_key(course_id, request), serializer.data, timeout=60)
 
         return response.Response(serializer.data, status=status.HTTP_200_OK)

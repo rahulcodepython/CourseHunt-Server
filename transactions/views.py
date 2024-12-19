@@ -219,26 +219,27 @@ class ListCouponView(views.APIView):
 
     @catch_exception
     def get(self, request):
-        page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+        page_no = request.GET.get("page", 1)
 
-        if cache.get(f"coupons_{page_no}"):
-            coupons = cache.get(f"coupons_{page_no}")
-            return response.Response(coupons, status=status.HTTP_200_OK)
+        cache_key = f"coupons_{page_no}"
+
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         coupons = models.CuponeCode.objects.all().order_by("-id")
         paginator = Paginator(coupons, 1)
         page = paginator.page(page_no)
-        coupons = page.object_list
 
-        serializer = serializers.ListCouponSerializer(coupons, many=True)
+        serializer = serializers.ListCouponSerializer(page, many=True)
 
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": pagination_next_url_builder(page, "transactions/list-coupon-code/"),
+            "next": pagination_next_url_builder(page, request.path),
         }
 
-        cache.set(f"coupons_{page_no}", response_data)
+        cache.set(cache_key, response_data, timeout=60)
 
         return response.Response(
             response_data,
@@ -289,27 +290,27 @@ class ListTransactionsView(views.APIView):
 
     @catch_exception
     def get(self, request):
-        page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+        page_no = request.GET.get("page", 1)
 
-        if cache.get(f"transactions_{page_no}"):
-            purchases = cache.get(f"transactions_{page_no}")
-            return response.Response(purchases, status=status.HTTP_200_OK)
+        cache_key = f"transactions_{page_no}"
+
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         purchases = models.Purchase.objects.all().order_by("-id")
         paginator = Paginator(purchases, 1)
         page = paginator.page(page_no)
-        purchases = page.object_list
-        serializer = serializers.ListTransactionSerializer(purchases, many=True)
+
+        serializer = serializers.ListTransactionSerializer(page, many=True)
 
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": pagination_next_url_builder(
-                page, "transactions/list-transactions/"
-            ),
+            "next": pagination_next_url_builder(page, request.path),
         }
 
-        cache.set(f"transactions_{page_no}", response_data)
+        cache.set(cache_key, response_data, timeout=60)
 
         return response.Response(
             response_data,
@@ -322,28 +323,27 @@ class ListSelfTransactionsView(views.APIView):
 
     @catch_exception
     def get(self, request):
-        page_no = 1 if request.GET.get("page") == None else request.GET.get("page")
+        page_no = request.GET.get("page", 1)
 
-        if cache.get(f"self_transactions_{page_no}"):
-            purchases = cache.get(f"self_transactions_{page_no}")
-            return response.Response(purchases, status=status.HTTP_200_OK)
+        cache_key = f"self_transactions_{page_no}"
+
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return response.Response(cached_data, status=status.HTTP_200_OK)
 
         purchases = models.Purchase.objects.filter(user=request.user).order_by("-id")
         paginator = Paginator(purchases, 1)
         page = paginator.get_page(page_no)
-        purchases = page.object_list
 
-        serializer = serializers.ListTransactionSerializer(purchases, many=True)
+        serializer = serializers.ListTransactionSerializer(page, many=True)
 
         response_data = {
             "results": serializer.data,
             "count": paginator.count,
-            "next": pagination_next_url_builder(
-                page, "transactions/list-self-transactions/"
-            ),
+            "next": pagination_next_url_builder(page, request.path),
         }
 
-        cache.set(f"self_transactions_{page_no}", response_data)
+        cache.set(cache_key, response_data, timeout=60)
 
         return response.Response(
             response_data,
