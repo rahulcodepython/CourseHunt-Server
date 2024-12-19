@@ -19,7 +19,7 @@ COPY feedback ./feedback
 COPY server ./server
 COPY templates ./templates
 COPY transactions ./transactions
-COPY .env .
+COPY .env.prod .env
 COPY manage.py .
 
 ENV ENVIRONMENT=production

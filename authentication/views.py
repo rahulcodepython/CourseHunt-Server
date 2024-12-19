@@ -340,19 +340,26 @@ class CreateJWTView(views.APIView):
             if not User.objects.filter(email=email).exists():
                 return Message.error(msg="No such user is there. Try again.")
 
-            username = User.objects.get(email=email).username
+            user = User.objects.get(email=email)
 
             if not user.is_active:
                 return Message.warn(
                     msg="You have already registered. But not verified you email yet. Please verify it first."
                 )
 
-            user = authenticate(username=username, password=password)
-
+            user = authenticate(username=user.username, password=password)
             if user is None:
                 return Message.error(
                     msg="Your email or password is not correct. Try again."
                 )
+
+            return response.Response(
+                {
+                    **get_tokens_for_user(user),
+                    "user": serializers.UserSerializer(user).data,
+                },
+                status=status.HTTP_200_OK,
+            )
 
         else:
             uid: str = request.data["uid"]
@@ -376,13 +383,13 @@ class CreateJWTView(views.APIView):
 
             login_code.delete()
 
-        return response.Response(
-            {
-                **get_tokens_for_user(user),
-                "user": serializers.UserSerializer(user).data,
-            },
-            status=status.HTTP_200_OK,
-        )
+            return response.Response(
+                {
+                    **get_tokens_for_user(user),
+                    "user": serializers.UserSerializer(user).data,
+                },
+                status=status.HTTP_200_OK,
+            )
 
 
 class TokenRefreshView(views.APIView):

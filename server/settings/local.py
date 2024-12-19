@@ -143,7 +143,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 # Auth Configuration
 AUTH_CONFIG = {"LOGIN_FIELD": "username"}
-OTP_VERIFICATION_LOGIN = True
+OTP_VERIFICATION_LOGIN = False
 
 # Email Setup
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
