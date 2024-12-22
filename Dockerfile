@@ -19,9 +19,14 @@ COPY feedback ./feedback
 COPY server ./server
 COPY templates ./templates
 COPY transactions ./transactions
+COPY blogs ./blogs
 COPY .env.prod .env
 COPY manage.py .
 
 ENV ENVIRONMENT=production
 
-RUN python manage.py collectstatic --noinput
+# RUN python manage.py makemigrations
+# RUN python manage.py migrate
+# RUN python manage.py createcachetable
+# RUN python manage.py collectstatic --noinput
+# RUN python manage.py createsuperuser
