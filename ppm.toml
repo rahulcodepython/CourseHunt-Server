@@ -1,5 +1,5 @@
 [python]
-python_version = "3.13.0" 
+python_version = "3.13.1" 
 
 
 [environment]
@@ -12,8 +12,6 @@ path = "./.env"
 
 [command]
 run = "python manage.py runserver" 
-makemigrations = "python manage.py makemigrations"
-migrate = "python manage.py migrate"
 
 
 [dependencies]

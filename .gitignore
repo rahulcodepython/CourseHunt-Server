@@ -4,6 +4,9 @@ db.sqlite3
 .idea
 .vscode
 data
+.venv
+
+ppm.toml
 
 /authentication/migrations/*
 !/authentication/migrations/__init__.py

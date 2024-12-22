@@ -9,7 +9,7 @@ class Blog(models.Model):
     )
     title = models.CharField(max_length=100)
     content = models.TextField()
-    image = models.CharField(max_length=100)
+    image = models.CharField(max_length=1000)
     created_at = models.DateField(auto_now_add=True)
     updated_at = models.DateField(auto_now=True)
     likes = models.IntegerField(default=0)

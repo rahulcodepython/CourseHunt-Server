@@ -143,9 +143,9 @@ class UpdateBlogView(views.APIView):
         return response.Response(serialized.data, status=status.HTTP_200_OK)
 
     @catch_exception
-    def post(self, request, blog_id):
+    def patch(self, request, blog_id):
         blog = Blog.objects.get(id=blog_id)
-        serialized = CreateBlogPostSerializer(blog, data=request.data)
+        serialized = CreateBlogPostSerializer(blog, data=request.data, partial=True)
         serialized.is_valid(raise_exception=True)
         serialized.save()
         cache.delete(f"blogs_{blog_id}")
