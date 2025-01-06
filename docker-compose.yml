@@ -19,7 +19,7 @@ services:
             - POSTGRES_PASSWORD=${DB_PASSWORD}
 
     adminer:
-        image: adminer:4.8.1
+        image: adminer
 
         restart: always
 

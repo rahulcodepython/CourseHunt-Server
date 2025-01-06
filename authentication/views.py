@@ -32,6 +32,12 @@ def generate_random_code(length=4) -> str:
 def get_tokens_for_user(user: models.User) -> TokenDict:
     refresh = RefreshToken.for_user(user)
 
+    refresh["email"] = user.email
+    refresh["first_name"] = user.first_name
+    refresh["last_name"] = user.last_name
+    refresh["image"] = user.image
+    refresh["is_superuser"] = user.is_superuser
+
     return {
         "refresh": str(refresh),
         "access": str(refresh.access_token),
@@ -356,10 +362,7 @@ class CreateJWTView(views.APIView):
                 )
 
             return response.Response(
-                {
-                    **get_tokens_for_user(user),
-                    "user": serializers.UserSerializer(user).data,
-                },
+                get_tokens_for_user(user),
                 status=status.HTTP_200_OK,
             )
 
@@ -386,10 +389,7 @@ class CreateJWTView(views.APIView):
             login_code.delete()
 
             return response.Response(
-                {
-                    **get_tokens_for_user(user),
-                    "user": serializers.UserSerializer(user).data,
-                },
+                get_tokens_for_user(user),
                 status=status.HTTP_200_OK,
             )
 
@@ -407,11 +407,17 @@ class TokenRefreshView(views.APIView):
 
         user = User.objects.get(username=token["username"])
 
+        access_token = token.access_token
+        access_token["email"] = user.email
+        access_token["first_name"] = user.first_name
+        access_token["last_name"] = user.last_name
+        access_token["image"] = user.image
+        access_token["is_superuser"] = user.is_superuser
+
         return response.Response(
             {
-                "access": str(token.access_token),
+                "access": str(access_token),
                 "refresh": str(token),
-                "user": serializers.UserSerializer(user).data,
             },
             status=status.HTTP_200_OK,
         )
