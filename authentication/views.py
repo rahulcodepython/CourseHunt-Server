@@ -575,7 +575,6 @@ class CheckEmailView(views.APIView):
     @catch_exception
     def post(self, request):
         email = request.data["email"]
-        print("Email", email)
 
         if User.objects.filter(email__icontains=email).exists():
             return Message.error(msg="Email is already taken. Try another one.")
