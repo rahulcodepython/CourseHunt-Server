@@ -7,7 +7,7 @@ BASE_API_URL = settings.BASE_API_URL
 
 def pagination_next_url_builder(page: Page, url: str) -> str | None:
     return (
-        f"{BASE_API_URL}/{url}?page={page.next_page_number()}"
+        f"{BASE_API_URL}{url}?page={page.next_page_number()}"
         if page.has_next()
         else None
     )
