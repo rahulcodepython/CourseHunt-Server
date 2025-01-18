@@ -177,10 +177,7 @@ class ActivateUserViews(views.APIView):
         models.ActivationCode.objects.filter(uid=uid, token=token)[0].delete()
 
         return response.Response(
-            {
-                **get_tokens_for_user(user),
-                "user": serializers.UserSerializer(user).data,
-            },
+            get_tokens_for_user(user),
             status=status.HTTP_200_OK,
         )
 
@@ -656,14 +653,10 @@ class github_authenticate(views.APIView):
             if User.objects.filter(username=github_username).exists():
                 user = User.objects.get(username=github_username)
 
-                user_data = serializers.UserSerializer(user).data
                 tokens = get_tokens_for_user(user)
 
                 return response.Response(
-                    {
-                        **tokens,
-                        "user": user_data,
-                    },
+                    tokens,
                     status=status.HTTP_200_OK,
                 )
 
@@ -685,14 +678,10 @@ class github_authenticate(views.APIView):
             user.set_password(password)
             user.save()
 
-            user_data = serializers.UserSerializer(user).data
             tokens = get_tokens_for_user(user)
 
             return response.Response(
-                {
-                    **tokens,
-                    "user": user_data,
-                },
+                tokens,
                 status=status.HTTP_200_OK,
             )
 
@@ -742,15 +731,11 @@ class google_authenticate(views.APIView):
 
             if User.objects.filter(email=google_email).exists():
                 user = User.objects.get(email=google_email)
-                user_data = serializers.UserSerializer(user).data
 
                 tokens = get_tokens_for_user(user)
 
                 return response.Response(
-                    {
-                        **tokens,
-                        "user": user_data,
-                    },
+                    tokens,
                     status=status.HTTP_200_OK,
                 )
 
@@ -772,14 +757,10 @@ class google_authenticate(views.APIView):
             user.set_password(password)
             user.save()
 
-            user_data = serializers.UserSerializer(user).data
             tokens = get_tokens_for_user(user)
 
             return response.Response(
-                {
-                    **tokens,
-                    "user": user_data,
-                },
+                tokens,
                 status=status.HTTP_200_OK,
             )
 

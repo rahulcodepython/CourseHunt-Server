@@ -25,7 +25,3 @@ DATABASES = {
 
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = ["http://localhost", "http://localhost:80"]
-
-SEND_LOGIN_CONFIRMATION_EMAIL = DEBUG
-
-OTP_VERIFICATION_LOGIN = DEBUG
