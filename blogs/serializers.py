@@ -56,8 +56,6 @@ class ReadBlogPostSerializer(BaseBlogPostSerializer):
 
     def get_liked(self, obj):
         user = self.context.get("request").user
-        print(user)
-        print(user in obj.like.all())
         return user in obj.like.all()
 
 

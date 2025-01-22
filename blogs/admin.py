@@ -9,4 +9,4 @@ class BlogAdmin(admin.ModelAdmin):
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ["id", "blog", "parent"]
+    list_display = ["id", "blog", "parent", "content"]

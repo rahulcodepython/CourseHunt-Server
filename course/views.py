@@ -68,15 +68,10 @@ class AdminListCoursesView(views.APIView):
     @catch_exception
     def get(self, request):
         page_no = request.GET.get("page", 1)
-
-        cache_key = f"list_all_courses_for_admin_page_{page_no}"
-
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return response.Response(cached_data, status=status.HTTP_200_OK)
+        page_size = request.GET.get("page_size", 2)
 
         courses = models.Course.objects.all().order_by("-id")
-        paginator = Paginator(courses, 2)
+        paginator = Paginator(courses, page_size)
         page = paginator.page(page_no)
 
         serializer = serializers.ListCoursesAdminDashboardSerializer(page, many=True)
@@ -86,8 +81,6 @@ class AdminListCoursesView(views.APIView):
             "count": paginator.count,
             "next": pagination_next_url_builder(page, request.path),
         }
-
-        cache.set(cache_key, response_data, timeout=60)
 
         return response.Response(
             response_data,
@@ -101,8 +94,9 @@ class PurchasedListCoursesView(views.APIView):
     @catch_exception
     def get(self, request):
         page_no = request.GET.get("page", 1)
+        page_size = request.GET.get("page_size", 1)
 
-        cache_key = f"list_all_purchased_courses_{request.user}_page_{page_no}"
+        cache_key = f"list_all_purchased_courses_{request.user}_page_{page_no}_page_size_{page_size}"
 
         cached_data = cache.get(cache_key)
         if cached_data:
@@ -114,7 +108,7 @@ class PurchasedListCoursesView(views.APIView):
             profile = Profile.objects.get(user=request.user)
             courses = profile.purchased_courses.all().order_by("-id")
 
-        paginator = Paginator(courses, 1)
+        paginator = Paginator(courses, page_size)
         page = paginator.page(page_no)
 
         serializer = serializers.ListCoursesDashboardSerializer(page, many=True)

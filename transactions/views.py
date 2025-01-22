@@ -220,15 +220,10 @@ class ListCouponView(views.APIView):
     @catch_exception
     def get(self, request):
         page_no = request.GET.get("page", 1)
-
-        cache_key = f"coupons_{page_no}"
-
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return response.Response(cached_data, status=status.HTTP_200_OK)
+        page_size = request.GET.get("page_size", 2)
 
         coupons = models.CuponeCode.objects.all().order_by("-id")
-        paginator = Paginator(coupons, 1)
+        paginator = Paginator(coupons, page_size)
         page = paginator.page(page_no)
 
         serializer = serializers.ListCouponSerializer(page, many=True)
@@ -238,8 +233,6 @@ class ListCouponView(views.APIView):
             "count": paginator.count,
             "next": pagination_next_url_builder(page, request.path),
         }
-
-        cache.set(cache_key, response_data, timeout=60)
 
         return response.Response(
             response_data,
@@ -291,15 +284,16 @@ class ListTransactionsView(views.APIView):
     @catch_exception
     def get(self, request):
         page_no = request.GET.get("page", 1)
+        page_size = request.GET.get("page_size", 2)
 
-        cache_key = f"transactions_{page_no}"
+        cache_key = f"transactions_{page_no}_{page_size}"
 
         cached_data = cache.get(cache_key)
         if cached_data:
             return response.Response(cached_data, status=status.HTTP_200_OK)
 
         purchases = models.Purchase.objects.all().order_by("-id")
-        paginator = Paginator(purchases, 1)
+        paginator = Paginator(purchases, page_size)
         page = paginator.page(page_no)
 
         serializer = serializers.ListTransactionSerializer(page, many=True)
@@ -324,15 +318,16 @@ class ListSelfTransactionsView(views.APIView):
     @catch_exception
     def get(self, request):
         page_no = request.GET.get("page", 1)
+        page_size = request.GET.get("page_size", 2)
 
-        cache_key = f"self_transactions_{page_no}"
+        cache_key = f"self_transactions_{page_no}_{page_size}"
 
         cached_data = cache.get(cache_key)
         if cached_data:
             return response.Response(cached_data, status=status.HTTP_200_OK)
 
         purchases = models.Purchase.objects.filter(user=request.user).order_by("-id")
-        paginator = Paginator(purchases, 1)
+        paginator = Paginator(purchases, page_size)
         page = paginator.get_page(page_no)
 
         serializer = serializers.ListTransactionSerializer(page, many=True)

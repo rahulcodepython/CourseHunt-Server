@@ -45,14 +45,10 @@ class AdminListAllBlogsView(views.APIView):
     @catch_exception
     def get(self, request):
         page_no = request.GET.get("page", 1)
-        cache_key = f"all_admin_blogs_{page_no}"
-
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return response.Response(cached_data, status=status.HTTP_200_OK)
+        page_size = request.GET.get("page_size", 2)
 
         blogs = Blog.objects.all().order_by("-created_at")
-        paginator = Paginator(blogs, 2)
+        paginator = Paginator(blogs, page_size)
         page = paginator.get_page(page_no)
         serialized = AdminListBlogPostSerializer(page, many=True)
 
@@ -62,7 +58,6 @@ class AdminListAllBlogsView(views.APIView):
             "next": pagination_next_url_builder(page, request.path),
         }
 
-        cache.set(cache_key, data)  # Cache for 15 minutes
         return response.Response(data, status=status.HTTP_200_OK)
 
 
@@ -168,7 +163,9 @@ class UpdateComment(views.APIView):
         comment.content = request.data["content"]
         comment.save()
         cache.delete(f"blogs_{comment.blog.id}")
-        return Message.success(msg="Comment is updated.")
+        return response.Response(
+            {"content": comment.content, "id": comment_id}, status=status.HTTP_200_OK
+        )
 
     @catch_exception
     def delete(self, request, comment_id):

@@ -18,7 +18,7 @@ class Blog(models.Model):
     comments = models.IntegerField(default=0)
 
     def __str__(self):
-        return self.id
+        return self.title
 
     def save(self, *args, **kwargs):
         if not self.id:
