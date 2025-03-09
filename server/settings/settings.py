@@ -71,6 +71,7 @@ AUTH_USER_MODEL = "authentication.User"
 
 WSGI_APPLICATION = "server.wsgi.application"
 
+# DATABASE_ROUTERS = ['path.to.db_router.MongoDBRouter']
 
 # Cache Configuration
 CACHES = {

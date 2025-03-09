@@ -18,10 +18,11 @@ DATABASES = {
         "PASSWORD": os.getenv(
             "DB_PASSWORD",
         ),
-        "HOST": "db",
+        "HOST": "postgresdb",
         "PORT": "5432",
     }
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = ["http://localhost", "http://localhost:80"]
+CORS_ALLOWED_ORIGINS = ["http://localhost",
+                        "http://localhost:80", "http://frontend:3000", "http://localhost:3000"]

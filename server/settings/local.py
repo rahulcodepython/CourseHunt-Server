@@ -20,7 +20,18 @@ DATABASES = {
         ),
         "HOST": "localhost",
         "PORT": "5432",
-    }
+    },
+    # 'mongodb': {
+    #         'ENGINE': 'djongo',
+    #         'NAME': 'courseHunt',
+    #         'ENFORCE_SCHEMA': False,
+    #         'CLIENT': {
+    #             'host': 'localhost',
+    #             'port': 27017,
+    #             'username': 'rahul',
+    #             'password': 'admin',
+    #         }
+    #     }
 }
 
 # CORS Configuration

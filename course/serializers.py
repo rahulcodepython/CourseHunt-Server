@@ -38,6 +38,7 @@ class StudySingleCourseSerializer(BaseCourseSerializer):
 
 class DetailSingleCourseSerializer(BaseCourseSerializer):
     enrolled = serializers.SerializerMethodField()
+    created_by = serializers.SerializerMethodField()
 
     class Meta(BaseCourseSerializer.Meta):
         exclude = [
@@ -57,6 +58,9 @@ class DetailSingleCourseSerializer(BaseCourseSerializer):
 
         profile = Profile.objects.get(user=user)
         return obj in profile.purchased_courses.all()
+    
+    def get_created_by(self, obj):
+        return f"{obj.created_by.first_name} {obj.created_by.last_name}"
 
 
 class ListCoursesDashboardSerializer(BaseCourseSerializer):
