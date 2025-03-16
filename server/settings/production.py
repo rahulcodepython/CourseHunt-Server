@@ -3,7 +3,12 @@ from .settings import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ["localhost", "backend", "127.0.0.1"]
+ALLOWED_HOSTS = [
+    "localhost",
+    "backend",
+    "127.0.0.1",
+    "coursehunt.rahulcodepython.tech"
+]
 
 # Database
 DATABASES = {
@@ -24,5 +29,11 @@ DATABASES = {
 }
 
 # CORS Configuration
-CORS_ALLOWED_ORIGINS = ["http://localhost",
-                        "http://localhost:80", "http://frontend:3000", "http://localhost:3000"]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost",
+    "http://localhost:80",
+    "http://frontend:3000",
+    "http://localhost:3000",
+    "http://coursehunt.rahulcodepython.tech",
+    "https://coursehunt.rahulcodepython.tech",
+]
