@@ -1,41 +1,63 @@
+from typing import Any, List, Optional, Tuple
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from . import manager as self_manager
 
-AUTH_METHOD = (
+# Define authentication methods as type-safe tuple
+AUTH_METHOD: Tuple[Tuple[str, str], ...] = (
     ("Credentials", "Credentials"),
     ("Google", "Google"),
     ("Github", "Github"),
 )
 
+# Maximum field lengths
+MAX_NAME_LENGTH: int = 1000
+MAX_EMAIL_LENGTH: int = 254
+TOKEN_LENGTH: int = 4
+
 
 class User(AbstractBaseUser, PermissionsMixin):
+    """
+    Custom user model that extends Django's AbstractBaseUser.
+    Implements custom fields and methods for user authentication and management.
+    """
     username = models.CharField(
-        max_length=1000,
+        max_length=MAX_NAME_LENGTH,
         unique=True,
         primary_key=True,
         db_index=True,
+        help_text="Unique identifier for the user"
     )
-    email = models.EmailField(unique=True, max_length=254, blank=True, null=True)
-    first_name = models.CharField(max_length=1000, blank=True)
-    last_name = models.CharField(max_length=1000, blank=True)
-    image = models.CharField(max_length=1000, blank=True, null=True)
-    method = models.CharField(max_length=50, default="Credentials", choices=AUTH_METHOD)
-    # password .....
+    email = models.EmailField(
+        unique=True,
+        max_length=MAX_EMAIL_LENGTH,
+        blank=True,
+        null=True,
+        help_text="User's email address"
+    )
+    first_name = models.CharField(max_length=MAX_NAME_LENGTH, blank=True)
+    last_name = models.CharField(max_length=MAX_NAME_LENGTH, blank=True)
+    image = models.CharField(max_length=MAX_NAME_LENGTH, blank=True, null=True)
+    method = models.CharField(
+        max_length=50,
+        default="Credentials",
+        choices=AUTH_METHOD,
+        help_text="Authentication method used"
+    )
 
     is_staff = models.BooleanField(default=True)
     is_active = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
 
+    # Explicitly disable unused fields
     groups = None
     user_permissions = None
     last_login = None
 
     objects = self_manager.UserManager()
 
-    REQUIRED_FIELDS = ["first_name", "last_name", "email"]
-
-    USERNAME_FIELD = "username"
+    REQUIRED_FIELDS: List[str] = ["first_name", "last_name", "email"]
+    USERNAME_FIELD: str = "username"
 
     class Meta:
         verbose_name = "User"
@@ -45,79 +67,94 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self) -> str:
         return self.username
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if not Profile.objects.filter(user=self).exists():
-            Profile.objects.create(user=self)
-        return self
+    def save(self, *args: Any, **kwargs: Any) -> 'User':
+        """Save user and create associated profile if it doesn't exist."""
+        try:
+            super().save(*args, **kwargs)
+            if not Profile.objects.filter(user=self).exists():
+                Profile.objects.create(user=self)
+            return self
+        except Exception as e:
+            raise ValueError(f"Failed to save user: {str(e)}")
 
-    def delete(self, *args, **kwargs):
-        Profile.objects.get(user=self).delete()
-        return super().delete(*args, **kwargs)
+    def delete(self, *args: Any, **kwargs: Any) -> Tuple[int, dict]:
+        """Delete user and associated profile."""
+        try:
+            Profile.objects.get(user=self).delete()
+            return super().delete(*args, **kwargs)
+        except Profile.DoesNotExist:
+            return super().delete(*args, **kwargs)
 
 
-class LoginCode(models.Model):
+class BaseCode(models.Model):
+    """Base abstract model for all code-based models."""
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    uid = models.CharField(default="", max_length=4)
-    token = models.CharField(default="", max_length=4)
+    uid = models.CharField(default="", max_length=TOKEN_LENGTH)
+    token = models.CharField(default="", max_length=TOKEN_LENGTH)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self) -> str:
+        return self.user.username
+
+
+class LoginCode(BaseCode):
+    """Model for storing login verification codes."""
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Login Code"
         verbose_name_plural = "Login Codes"
 
-    def __str__(self) -> str:
-        return self.user.username
 
-
-class ActivationCode(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    uid = models.CharField(default="", max_length=4)
-    token = models.CharField(default="", max_length=4)
+class ActivationCode(BaseCode):
+    """Model for storing account activation codes."""
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Activation Code"
         verbose_name_plural = "Activation Codes"
 
-    def __str__(self) -> str:
-        return self.user.username
 
-
-class ResetPasswordCode(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    uid = models.CharField(default="", max_length=4)
-    token = models.CharField(default="", max_length=4)
-
+class ResetPasswordCode(BaseCode):
+    """Model for storing password reset codes."""
     class Meta:
         verbose_name = "Reset Password Code"
         verbose_name_plural = "Reset Password Codes"
 
-    def __str__(self) -> str:
-        return self.user.username
 
-
-class ResetEmailCode(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    uid = models.CharField(default="", max_length=4)
-    token = models.CharField(default="", max_length=4)
-    new_email = models.EmailField(default="", max_length=254)
+class ResetEmailCode(BaseCode):
+    """Model for storing email reset codes."""
+    new_email = models.EmailField(
+        default="",
+        max_length=MAX_EMAIL_LENGTH,
+        help_text="New email address to be verified"
+    )
 
     class Meta:
         verbose_name = "Reset Email Code"
         verbose_name_plural = "Reset Email Codes"
 
-    def __str__(self) -> str:
-        return self.user.username
-
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    purchased_courses = models.ManyToManyField("course.Course", blank=True)
-    country = models.CharField(max_length=1000, blank=True, null=True)
-    city = models.CharField(max_length=1000, blank=True, null=True)
-    address = models.CharField(max_length=1000, blank=True, null=True)
-    phone = models.CharField(max_length=1000, blank=True, null=True)
+    """User profile model storing additional user information."""
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='profile'
+    )
+    purchased_courses = models.ManyToManyField(
+        "course.Course",
+        blank=True,
+        related_name='purchasers'
+    )
+    country = models.CharField(
+        max_length=MAX_NAME_LENGTH, blank=True, null=True)
+    city = models.CharField(max_length=MAX_NAME_LENGTH, blank=True, null=True)
+    address = models.CharField(
+        max_length=MAX_NAME_LENGTH, blank=True, null=True)
+    phone = models.CharField(max_length=MAX_NAME_LENGTH, blank=True, null=True)
 
     class Meta:
         verbose_name = "Profile"
