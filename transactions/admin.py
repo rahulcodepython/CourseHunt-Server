@@ -1,25 +1,35 @@
 from django.contrib import admin
-from . import models
+from .models import Purchase, CuponeCode  # Import only required models
 
 
-@admin.register(models.Purchase)
+@admin.register(Purchase)
 class PurchaseAdmin(admin.ModelAdmin):
-    list_display = (
-        "course",
-        "user",
-        "amount",
-        "is_paid",
+    """
+    Admin configuration for the Purchase model.
+    Displays relevant fields in the admin panel.
+    """
+    # Fields to display in the admin list view
+    list_display: tuple[str, str, str, str] = (
+        "course",  # Course associated with the purchase
+        "user",    # User who made the purchase
+        "amount",  # Amount paid for the purchase
+        "is_paid",  # Payment status
     )
 
 
-@admin.register(models.CuponeCode)
+@admin.register(CuponeCode)
 class CuponeCodeAdmin(admin.ModelAdmin):
-    list_display = (
-        "code",
-        "discount",
-        "expiry",
-        "quantity",
-        "used",
-        "is_unlimited",
-        "is_active",
+    """
+    Admin configuration for the CuponeCode model.
+    Displays relevant fields in the admin panel.
+    """
+    # Fields to display in the admin list view
+    list_display: tuple[str, str, str, str, str, str, str] = (
+        "code",          # Coupon code
+        "discount",      # Discount percentage or amount
+        "expiry",        # Expiry date of the coupon
+        "quantity",      # Total quantity of the coupon
+        "used",          # Number of times the coupon has been used
+        "is_unlimited",  # Whether the coupon has unlimited usage
+        "is_active",     # Whether the coupon is currently active
     )

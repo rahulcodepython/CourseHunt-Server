@@ -1,28 +1,42 @@
+"""
+Local settings for the Django project.
+This file contains configurations specific to the local development environment.
+"""
+
+import os  # Importing os for environment variable access
+
+# Importing base settings
 from .settings import *
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Enable debug mode for local development (Do not use in production)
+DEBUG: bool = True
 
-ALLOWED_HOSTS = ["*"]
+# Allow all hosts for local development (Restrict in production)
+ALLOWED_HOSTS: list[str] = ["*"]
 
-# Database
-DATABASES = {
+# Database configuration for local development
+DB_ENGINE: str = "django.db.backends.postgresql"  # Database engine
+# Database name with a fallback
+DB_NAME: str = os.getenv("DB_NAME", "default_db_name")
+# Database user with a fallback
+DB_USER: str = os.getenv("DB_USER", "default_user")
+# Database password with a fallback
+DB_PASSWORD: str = os.getenv("DB_PASSWORD", "default_password")
+DB_HOST: str = "postgresdb"  # Database host
+DB_PORT: str = "5432"  # Database port
+
+DATABASES: dict[str, dict[str, str]] = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv(
-            "DB_NAME",
-        ),
-        "USER": os.getenv(
-            "DB_USER",
-        ),
-        "PASSWORD": os.getenv(
-            "DB_PASSWORD",
-        ),
-        "HOST": "postgresdb",
-        "PORT": "5432",
+        "ENGINE": DB_ENGINE,  # Database engine
+        "NAME": DB_NAME,  # Database name
+        "USER": DB_USER,  # Database user
+        "PASSWORD": DB_PASSWORD,  # Database password
+        "HOST": DB_HOST,  # Database host
+        "PORT": DB_PORT,  # Database port
     },
 }
 
-# CORS Configuration
-CORS_ALLOWED_ORIGINS = []
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS configuration for local development
+CORS_ALLOWED_ORIGINS: list[str] = []  # List of allowed origins (empty for now)
+# Allow all origins (not recommended for production)
+CORS_ALLOW_ALL_ORIGINS: bool = True

@@ -1,23 +1,29 @@
-from django.core.management.utils import get_random_secret_key
-from dotenv import load_dotenv
+"""
+Django settings for the CourseHunt project.
+
+This module contains all the configuration settings for the Django project,
+including installed apps, middleware, database configurations, authentication,
+email setup, and third-party integrations.
+"""
+
 from datetime import timedelta
 from pathlib import Path
 import os
+from django.core.management.utils import get_random_secret_key
+from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# Base directory of the project
+BASE_DIR: Path = Path(__file__).resolve().parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
+# Secret key for the project (use environment variable or generate a random one)
+SECRET_KEY: str = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
-
-# Application definition
-INSTALLED_APPS = [
+# Installed applications
+INSTALLED_APPS: list[str] = [
+    # Django default apps
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -30,14 +36,15 @@ INSTALLED_APPS = [
     "feedback",
     "transactions",
     "blogs",
-    # Third party packages
+    # Third-party packages
     "rest_framework",
     "corsheaders",
     "rest_framework_simplejwt",
     "mail_templated",
 ]
 
-MIDDLEWARE = [
+# Middleware configuration
+MIDDLEWARE: list[str] = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -48,12 +55,15 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "server.urls"
+# Root URL configuration
+ROOT_URLCONF: str = "server.urls"
 
-TEMPLATES = [
+# Template configuration
+TEMPLATE_DIRS: list[Path] = [BASE_DIR / "templates"]
+TEMPLATES: list[dict] = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
+        "DIRS": TEMPLATE_DIRS,
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -66,105 +76,95 @@ TEMPLATES = [
     },
 ]
 
-# Custom User Model
-AUTH_USER_MODEL = "authentication.User"
+# Custom user model
+AUTH_USER_MODEL: str = "authentication.User"
 
-WSGI_APPLICATION = "server.wsgi.application"
+# WSGI application
+WSGI_APPLICATION: str = "server.wsgi.application"
 
-# DATABASE_ROUTERS = ['path.to.db_router.MongoDBRouter']
-
-# Cache Configuration
-CACHES = {
+# Cache configuration
+CACHE_BACKEND: str = "django.core.cache.backends.db.DatabaseCache"
+CACHE_LOCATION: str = "my_cache_table"
+CACHES: dict = {
     "default": {
-        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-        "LOCATION": "my_cache_table",
+        "BACKEND": CACHE_BACKEND,
+        "LOCATION": CACHE_LOCATION,
     }
 }
 
 # Password validation
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+AUTH_PASSWORD_VALIDATORS: list[dict] = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# Internationalization
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "Asia/Kolkata"
-USE_I18N = True
-USE_TZ = True
+# Internationalization settings
+LANGUAGE_CODE: str = "en-us"
+TIME_ZONE: str = "Asia/Kolkata"
+USE_I18N: bool = True
+USE_TZ: bool = True
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR.parent / "static"
+# Static files configuration
+STATIC_URL: str = "static/"
+STATIC_ROOT: Path = BASE_DIR.parent / "static"
 
 # Default primary key field type
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
 
-# Rest Framework Configuration
-REST_FRAMEWORK = {
+# Django REST Framework configuration
+REST_FRAMEWORK: dict = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     )
 }
 
-# Auth Configuration
-AUTH_CONFIG = {"LOGIN_FIELD": "username"}
+# Authentication configuration
+AUTH_CONFIG: dict = {"LOGIN_FIELD": "username"}
 
-# Email Setup
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_USE_TLS = True
-EMAIL_PORT = 587
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-COMPANY_NAME = "CourseHunt"
+# Email setup
+EMAIL_BACKEND: str = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST: str = "smtp.gmail.com"
+EMAIL_USE_TLS: bool = True
+EMAIL_PORT: int = 587
+EMAIL_HOST_USER: str = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD: str = os.getenv("EMAIL_HOST_PASSWORD", "")
+COMPANY_NAME: str = "CourseHunt"
 
-# Process Configuration
-SEND_ACTIVATION_EMAIL = True
-SEND_RESET_PASSWORD_CONFIRMATION_EMAIL = True
-SEND_RESET_EMAIL_CONFIRMATION_EMAIL = True
-SEND_LOGIN_CONFIRMATION_EMAIL = False
-OTP_VERIFICATION_LOGIN = False
+# Process configuration
+SEND_ACTIVATION_EMAIL: bool = True
+SEND_RESET_PASSWORD_CONFIRMATION_EMAIL: bool = True
+SEND_RESET_EMAIL_CONFIRMATION_EMAIL: bool = True
+SEND_LOGIN_CONFIRMATION_EMAIL: bool = False
+OTP_VERIFICATION_LOGIN: bool = False
 
-# JWT Configuration
-SIMPLE_JWT = {
+# JWT configuration
+SIMPLE_JWT: dict = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=4),
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": False,
-    "AUTH_HEADER_TYPES": ("Bearer"),
+    "AUTH_HEADER_TYPES": ("Bearer",),
     "USER_ID_FIELD": "username",
     "USER_ID_CLAIM": "username",
 }
 
-# Frontend and Backend URL
-BASE_APP_URL = os.getenv("BASE_APP_URL", "")
-BASE_API_URL = os.getenv("BASE_API_URL", "")
+# Frontend and backend URLs
+BASE_APP_URL: str = os.getenv("BASE_APP_URL", "")
+BASE_API_URL: str = os.getenv("BASE_API_URL", "")
 
 # GitHub OAuth details
-GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
-GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
+GITHUB_CLIENT_ID: str = os.getenv("GITHUB_CLIENT_ID", "")
+GITHUB_CLIENT_SECRET: str = os.getenv("GITHUB_CLIENT_SECRET", "")
+GITHUB_REDIRECT_URI: str = os.getenv("GITHUB_REDIRECT_URI", "")
 
 # Google OAuth details
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "")
 
-# Backend URL
-GITHUB_REDIRECT_URI = os.getenv("GITHUB_REDIRECT_URI", "")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "")
-
-
-# RAZORPAY Configuration
-RAZORPAY_API_KEY = os.getenv("RAZORPAY_API_KEY", "")
-RAZORPAY_SECRET_KEY = os.getenv("RAZORPAY_SECRET_KEY", "")
+# Razorpay configuration
+RAZORPAY_API_KEY: str = os.getenv("RAZORPAY_API_KEY", "")
+RAZORPAY_SECRET_KEY: str = os.getenv("RAZORPAY_SECRET_KEY", "")

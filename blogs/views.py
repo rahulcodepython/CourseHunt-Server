@@ -1,4 +1,11 @@
 from rest_framework import views, status, response, permissions
+from typing import Dict, Any, Optional
+from django.core.cache import cache
+from django.core.paginator import Paginator, Page
+from django.http import HttpRequest
+from django.db.models.query import QuerySet
+from django.shortcuts import get_object_or_404
+
 from .models import Blog, Comment
 from server.decorators import catch_exception
 from .serializers import (
@@ -8,52 +15,85 @@ from .serializers import (
     AdminListBlogPostSerializer,
     CreateBlogPostSerializer,
 )
-from django.core.cache import cache
-from django.core.paginator import Paginator
 from server.utils import pagination_next_url_builder
 from server.message import Message
 
 
 class ListAllBlogsView(views.APIView):
+    """API view for listing all blog posts with pagination and caching."""
 
     @catch_exception
-    def get(self, request):
-        page_no = request.GET.get("page", 1)
-        cache_key = f"all_blogs_{page_no}"
+    def get(self, request: HttpRequest) -> response.Response:
+        """
+        Retrieve a paginated list of all blogs.
 
-        cached_data = cache.get(cache_key)
+        Args:
+            request: HTTP request object containing query parameters.
+
+        Returns:
+            Response with paginated blog data.
+        """
+        # Extract pagination parameters from request
+        page_no: int = int(request.GET.get("page", 1))
+        page_size: int = 2  # Fixed page size for pagination
+
+        # Generate cache key based on page number
+        cache_key: str = f"all_blogs_{page_no}"
+
+        # Check if cached data exists
+        cached_data: Optional[Dict[str, Any]] = cache.get(cache_key)
         if cached_data:
             return response.Response(cached_data, status=status.HTTP_200_OK)
 
-        blogs = Blog.objects.all().order_by("-created_at")
-        paginator = Paginator(blogs, 2)
-        page = paginator.get_page(page_no)
-        serialized = ListBlogPostSerializer(page, many=True)
+        # Fetch blogs from the database
+        blogs: QuerySet[Blog] = Blog.objects.all().order_by("-created_at")
+        paginator: Paginator = Paginator(blogs, page_size)
+        page: Page = paginator.get_page(page_no)
 
-        data = {
-            "results": serialized.data,
+        # Serialize the paginated data
+        serialized_data = ListBlogPostSerializer(page, many=True).data
+
+        # Prepare response data
+        data: Dict[str, Any] = {
+            "results": serialized_data,
             "count": paginator.count,
             "next": pagination_next_url_builder(page, request.path),
         }
 
-        cache.set(cache_key, data)  # Cache for 15 minutes
+        # Cache the response data for 15 minutes
+        cache.set(cache_key, data, timeout=900)
         return response.Response(data, status=status.HTTP_200_OK)
 
 
 class AdminListAllBlogsView(views.APIView):
+    """API view for admin to list all blog posts with pagination."""
 
     @catch_exception
-    def get(self, request):
-        page_no = request.GET.get("page", 1)
-        page_size = request.GET.get("page_size", 2)
+    def get(self, request: HttpRequest) -> response.Response:
+        """
+        Retrieve a paginated list of all blogs for admin.
 
-        blogs = Blog.objects.all().order_by("-created_at")
-        paginator = Paginator(blogs, page_size)
-        page = paginator.get_page(page_no)
-        serialized = AdminListBlogPostSerializer(page, many=True)
+        Args:
+            request: HTTP request object containing query parameters.
 
-        data = {
-            "results": serialized.data,
+        Returns:
+            Response with paginated blog data.
+        """
+        # Extract pagination parameters from request
+        page_no: int = int(request.GET.get("page", 1))
+        page_size: int = int(request.GET.get("page_size", 2))
+
+        # Fetch blogs from the database
+        blogs: QuerySet[Blog] = Blog.objects.all().order_by("-created_at")
+        paginator: Paginator = Paginator(blogs, page_size)
+        page: Page = paginator.get_page(page_no)
+
+        # Serialize the paginated data
+        serialized_data = AdminListBlogPostSerializer(page, many=True).data
+
+        # Prepare response data
+        data: Dict[str, Any] = {
+            "results": serialized_data,
             "count": paginator.count,
             "next": pagination_next_url_builder(page, request.path),
         }
@@ -62,66 +102,128 @@ class AdminListAllBlogsView(views.APIView):
 
 
 class ReadBlogView(views.APIView):
+    """API view for reading a single blog post."""
 
     @catch_exception
-    def get(self, request, blog_id):
-        cache_key = f"blogs_{blog_id}"
+    def get(self, request: HttpRequest, blog_id: int) -> response.Response:
+        """
+        Retrieve a single blog post by its ID.
 
-        cached_data = cache.get(cache_key)
+        Args:
+            request: HTTP request object.
+            blog_id: ID of the blog to retrieve.
+
+        Returns:
+            Response with blog data.
+        """
+        # Generate cache key for the blog
+        cache_key: str = f"blogs_{blog_id}"
+
+        # Check if cached data exists
+        cached_data: Optional[Dict[str, Any]] = cache.get(cache_key)
         if cached_data:
             return response.Response(cached_data, status=status.HTTP_200_OK)
 
-        blog = Blog.objects.get(id=blog_id)
-        serialized = ReadBlogPostSerializer(blog, context={"request": request})
-        cache.set(cache_key, serialized.data)
-        return response.Response(serialized.data, status=status.HTTP_200_OK)
+        # Fetch the blog from the database
+        blog: Blog = get_object_or_404(Blog, id=blog_id)
+
+        # Serialize the blog data
+        serialized_data = ReadBlogPostSerializer(
+            blog, context={"request": request}).data
+
+        # Cache the serialized data
+        cache.set(cache_key, serialized_data, timeout=900)
+        return response.Response(serialized_data, status=status.HTTP_200_OK)
 
 
 class CreateCommentView(views.APIView):
+    """API view for creating a comment on a blog post."""
     permission_classes = [permissions.IsAuthenticated]
 
     @catch_exception
-    def post(self, request):
+    def post(self, request: HttpRequest) -> response.Response:
+        """
+        Create a new comment for a blog post.
+
+        Args:
+            request: HTTP request object containing comment data.
+
+        Returns:
+            Response with created comment data.
+        """
+        # Deserialize and validate the request data
         serialized = CreateCommentSerializer(
-            data=request.data, context={"request": request}
-        )
+            data=request.data, context={"request": request})
         serialized.is_valid(raise_exception=True)
         serialized.save()
-        blog = Blog.objects.get(id=request.data["blog"])
+
+        # Update the blog's comment count
+        blog: Blog = get_object_or_404(Blog, id=request.data["blog"])
         blog.comments += 1
         blog.save()
-        serialized_data = serialized.data
+
+        # Prepare response data
+        serialized_data: Dict[str, Any] = serialized.data
         serialized_data.pop("blog", None)
         serialized_data.pop("parent", None)
+
+        # Clear the cache for the blog
         cache.delete(f"blogs_{request.data['blog']}")
         return response.Response(serialized_data, status=status.HTTP_201_CREATED)
 
 
 class LikeBlogView(views.APIView):
+    """API view for liking or unliking a blog post."""
     permission_classes = [permissions.IsAuthenticated]
 
     @catch_exception
-    def post(self, request, blog_id):
-        blog = Blog.objects.get(id=blog_id)
-        liked = True
+    def post(self, request: HttpRequest, blog_id: int) -> response.Response:
+        """
+        Like or unlike a blog post.
+
+        Args:
+            request: HTTP request object.
+            blog_id: ID of the blog to like or unlike.
+
+        Returns:
+            Response indicating the like status.
+        """
+        # Fetch the blog from the database
+        blog: Blog = get_object_or_404(Blog, id=blog_id)
         user = request.user
+
+        # Toggle the like status
         if user in blog.like.all():
             blog.like.remove(user)
             blog.likes -= 1
-            liked = False
+            liked: bool = False
         else:
             blog.like.add(user)
             blog.likes += 1
+            liked: bool = True
+
+        # Save the blog and clear the cache
         blog.save()
         cache.delete(f"blogs_{blog_id}")
         return response.Response({"liked": liked}, status=status.HTTP_200_OK)
 
 
 class CreateBlogView(views.APIView):
+    """API view for creating a new blog post."""
     permission_classes = [permissions.IsAdminUser]
 
     @catch_exception
-    def post(self, request):
+    def post(self, request: HttpRequest) -> response.Response:
+        """
+        Create a new blog post.
+
+        Args:
+            request: HTTP request object containing blog data.
+
+        Returns:
+            Response indicating success.
+        """
+        # Deserialize and validate the request data
         serialized = CreateBlogPostSerializer(data=request.data)
         serialized.is_valid(raise_exception=True)
         serialized.save()
@@ -129,37 +231,80 @@ class CreateBlogView(views.APIView):
 
 
 class UpdateBlogView(views.APIView):
+    """API view for updating or deleting a blog post."""
     permission_classes = [permissions.IsAdminUser]
 
     @catch_exception
-    def get(self, request, blog_id):
-        blog = Blog.objects.get(id=blog_id)
-        serialized = CreateBlogPostSerializer(blog)
-        return response.Response(serialized.data, status=status.HTTP_200_OK)
+    def get(self, request: HttpRequest, blog_id: int) -> response.Response:
+        """
+        Retrieve a blog post for editing.
+
+        Args:
+            request: HTTP request object.
+            blog_id: ID of the blog to retrieve.
+
+        Returns:
+            Response with blog data.
+        """
+        blog: Blog = get_object_or_404(Blog, id=blog_id)
+        serialized_data = CreateBlogPostSerializer(blog).data
+        return response.Response(serialized_data, status=status.HTTP_200_OK)
 
     @catch_exception
-    def patch(self, request, blog_id):
-        blog = Blog.objects.get(id=blog_id)
-        serialized = CreateBlogPostSerializer(blog, data=request.data, partial=True)
+    def patch(self, request: HttpRequest, blog_id: int) -> response.Response:
+        """
+        Update a blog post.
+
+        Args:
+            request: HTTP request object containing updated data.
+            blog_id: ID of the blog to update.
+
+        Returns:
+            Response indicating success.
+        """
+        blog: Blog = get_object_or_404(Blog, id=blog_id)
+        serialized = CreateBlogPostSerializer(
+            blog, data=request.data, partial=True)
         serialized.is_valid(raise_exception=True)
         serialized.save()
         cache.delete(f"blogs_{blog_id}")
         return Message.success(msg="Blog is updated.")
 
     @catch_exception
-    def delete(self, request, blog_id):
-        blog = Blog.objects.get(id=blog_id)
+    def delete(self, request: HttpRequest, blog_id: int) -> response.Response:
+        """
+        Delete a blog post.
+
+        Args:
+            request: HTTP request object.
+            blog_id: ID of the blog to delete.
+
+        Returns:
+            Response indicating success.
+        """
+        blog: Blog = get_object_or_404(Blog, id=blog_id)
         blog.delete()
         cache.delete(f"blogs_{blog_id}")
         return Message.success(msg="Blog is deleted.")
 
 
 class UpdateComment(views.APIView):
+    """API view for updating or deleting a comment."""
     permission_classes = [permissions.IsAdminUser]
 
     @catch_exception
-    def post(self, request, comment_id):
-        comment = Comment.objects.get(id=comment_id)
+    def post(self, request: HttpRequest, comment_id: int) -> response.Response:
+        """
+        Update a comment.
+
+        Args:
+            request: HTTP request object containing updated comment data.
+            comment_id: ID of the comment to update.
+
+        Returns:
+            Response with updated comment data.
+        """
+        comment: Comment = get_object_or_404(Comment, id=comment_id)
         comment.content = request.data["content"]
         comment.save()
         cache.delete(f"blogs_{comment.blog.id}")
@@ -168,8 +313,18 @@ class UpdateComment(views.APIView):
         )
 
     @catch_exception
-    def delete(self, request, comment_id):
-        comment = Comment.objects.get(id=comment_id)
+    def delete(self, request: HttpRequest, comment_id: int) -> response.Response:
+        """
+        Delete a comment.
+
+        Args:
+            request: HTTP request object.
+            comment_id: ID of the comment to delete.
+
+        Returns:
+            Response indicating success.
+        """
+        comment: Comment = get_object_or_404(Comment, id=comment_id)
         comment.delete()
         cache.delete(f"blogs_{comment.blog.id}")
         return Message.success(msg="Comment is deleted.")

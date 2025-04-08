@@ -1,145 +1,204 @@
+"""
+This module contains views for handling transactions, payments, and coupons
+in the CourseHunt application. It includes functionality for course checkout,
+payment initiation, payment verification, coupon management, and transaction listing.
+"""
+
 from rest_framework import views, response, status, permissions
 from django.core.paginator import Paginator
-from . import serializers, models
-import razorpay
 from django.conf import settings
 from django.shortcuts import get_object_or_404
-from authentication.models import Profile
 from django.utils import timezone
 from django.core.cache import cache
+from authentication.models import Profile
 from server.message import Message
 from server.decorators import catch_exception
 from server.utils import pagination_next_url_builder
+from . import serializers, models
+import razorpay
 
+# Initialize Razorpay client with API keys
 razorpay_client = razorpay.Client(
-    auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_SECRET_KEY)
-)
+    auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_SECRET_KEY))
 
 
-def calculateCoursePrice(price: int, offer: float) -> float:
-    tax = 0.18 * price
-    total = price + tax
-    total = total - (offer / 100 * total)
+def calculate_course_price(price: int, offer: float) -> float:
+    """
+    Calculate the total course price after applying tax and offer.
+    """
+    tax: float = 0.18 * price  # 18% tax
+    total: float = price + tax
+    total -= (offer / 100 * total)  # Apply offer discount
     return total
 
 
 class CourseCheckoutView(views.APIView):
+    """
+    View to handle course checkout and provide pricing details.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     @catch_exception
-    def get(self, request, course_id):
-        if not models.Course.objects.filter(id=course_id).exists():
+    def get(self, request, course_id: int):
+        """
+        Retrieve course pricing details for checkout.
+        """
+        # Check if the course exists
+        course_exists: bool = models.Course.objects.filter(
+            id=course_id).exists()
+        if not course_exists:
             return Message.error("Course not found")
 
-        course = models.Course.objects.get(id=course_id)
-        user = request.user
-        profile = user.profile
+        # Fetch course and user details
+        course: models.Course = models.Course.objects.get(id=course_id)
+        user: Profile = request.user
+        profile: Profile = user.profile
 
-        price = course.price
-        total = calculateCoursePrice(price, course.offer)
-        tax = 0.18 * price
+        # Calculate pricing details
+        price: int = course.price
+        total: float = calculate_course_price(price, course.offer)
+        tax: float = 0.18 * price
 
-        return response.Response(
-            {
-                "price": price,
-                "tax": tax,
-                "offer": course.offer,
-                "total": total,
-                "name": user.first_name + " " + user.last_name,
-                "email": user.email,
-                "country": profile.country,
-                "city": profile.city,
-                "phone": profile.phone,
-                "address": profile.address,
-            },
-            status=status.HTTP_200_OK,
-        )
+        # Prepare response data
+        response_data: dict = {
+            "price": price,
+            "tax": tax,
+            "offer": course.offer,
+            "total": total,
+            "name": f"{user.first_name} {user.last_name}",
+            "email": user.email,
+            "country": profile.country,
+            "city": profile.city,
+            "phone": profile.phone,
+            "address": profile.address,
+        }
+
+        return response.Response(response_data, status=status.HTTP_200_OK)
 
 
 class InitiatePaymentView(views.APIView):
+    """
+    View to initiate payment for a course.
+    """
 
     @catch_exception
-    def post(self, request, course_id):
-        if not models.Course.objects.filter(id=course_id).exists():
+    def post(self, request, course_id: int):
+        """
+        Create a Razorpay order and save it in the database.
+        """
+        # Check if the course exists
+        course_exists: bool = models.Course.objects.filter(
+            id=course_id).exists()
+        if not course_exists:
             return Message.error("Course not found")
 
-        course = models.Course.objects.get(id=course_id)
-        user = request.user
+        # Fetch course and user details
+        course: models.Course = models.Course.objects.get(id=course_id)
+        user: Profile = request.user
 
-        if course in Profile.objects.get(user=request.user).purchased_courses.all():
+        # Check if the user already purchased the course
+        purchased_courses = Profile.objects.get(
+            user=user).purchased_courses.all()
+        if course in purchased_courses:
             return Message.error("You have already purchased this course")
 
-        total = calculateCoursePrice(course.price, course.offer)
+        # Calculate total price
+        total: float = calculate_course_price(course.price, course.offer)
 
-        is_discount = request.data["is_discount"]
-        discount = 0
+        # Handle discount if applicable
+        is_discount: bool = request.data.get("is_discount", False)
+        discount: float = 0.0
         if is_discount:
-            coupon_code_id = request.data["coupon_code"]
-            if models.CuponeCode.objects.filter(id=coupon_code_id).exists():
-                coupon = models.CuponeCode.objects.get(id=coupon_code_id)
+            coupon_code_id: int = request.data.get("coupon_code")
+            coupon_exists: bool = models.CuponeCode.objects.filter(
+                id=coupon_code_id).exists()
+            if coupon_exists:
+                coupon: models.CuponeCode = models.CuponeCode.objects.get(
+                    id=coupon_code_id)
                 discount = coupon.discount
 
-        total = total - discount if total > discount else 0
+        # Adjust total price after discount
+        total = max(total - discount, 0)
 
-        amount = int(total * 100)  # Razorpay amount is in paisa
+        # Convert total to paisa for Razorpay
+        amount: int = int(total * 100)
 
-        # Create a Razorpay Order
-        razorpay_order = razorpay_client.order.create(
+        # Create a Razorpay order
+        razorpay_order: dict = razorpay_client.order.create(
             {"amount": amount, "currency": "INR", "payment_capture": "1"}
         )
 
-        # Create an Order in our DB
-        if not models.Purchase.objects.filter(
-            razorpay_order_id=razorpay_order["id"],
-            course=course,
-            user=user,
-        ).exists():
+        # Save the order in the database
+        purchase_exists: bool = models.Purchase.objects.filter(
+            razorpay_order_id=razorpay_order["id"], course=course, user=user
+        ).exists()
+        if not purchase_exists:
             models.Purchase.objects.create(
                 course=course,
                 user=user,
                 amount=total,
                 razorpay_order_id=razorpay_order["id"],
             )
-        return response.Response(
-            {
-                "order_id": razorpay_order["id"],
-                "amount": amount,
-                "currency": "INR",
-            },
-            status=status.HTTP_201_CREATED,
-        )
+
+        # Prepare response data
+        response_data: dict = {
+            "order_id": razorpay_order["id"],
+            "amount": amount,
+            "currency": "INR",
+        }
+
+        return response.Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class VerifyPaymentView(views.APIView):
+    """
+    View to verify Razorpay payment and update the purchase status.
+    """
 
     def post(self, request):
+        """
+        Verify payment signature and update purchase details.
+        """
         try:
-            data = request.data
-            if not models.Purchase.objects.filter(
+            data: dict = request.data
+
+            # Check if the order exists
+            order_exists: bool = models.Purchase.objects.filter(
                 razorpay_order_id=data["razorpay_order_id"]
-            ).exists():
+            ).exists()
+            if not order_exists:
                 return Message.error("Order not found")
 
-            purchase = models.Purchase.objects.get(
+            # Fetch purchase details
+            purchase: models.Purchase = models.Purchase.objects.get(
                 razorpay_order_id=data["razorpay_order_id"]
             )
 
+            # Verify Razorpay payment signature
             razorpay_client.utility.verify_payment_signature(data)
+
+            # Update purchase details
             purchase.is_paid = True
             purchase.razorpay_payment_id = data["razorpay_payment_id"]
             purchase.razorpay_signature = data["razorpay_signature"]
             purchase.save()
 
-            is_discount = request.data["is_discount"]
+            # Handle coupon usage if applicable
+            is_discount: bool = request.data.get("is_discount", False)
             if is_discount:
-                coupon_code_id = request.data["coupon_code"]
-                if models.CuponeCode.objects.filter(id=coupon_code_id).exists():
-                    coupon = models.CuponeCode.objects.get(id=coupon_code_id)
+                coupon_code_id: int = request.data.get("coupon_code")
+                coupon_exists: bool = models.CuponeCode.objects.filter(
+                    id=coupon_code_id).exists()
+                if coupon_exists:
+                    coupon: models.CuponeCode = models.CuponeCode.objects.get(
+                        id=coupon_code_id)
                     coupon.used += 1
                     coupon.save()
 
-            course = models.Course.objects.get(id=data["course_id"])
-            profile = Profile.objects.get(user=request.user)
+            # Add course to user's purchased courses
+            course: models.Course = models.Course.objects.get(
+                id=data["course_id"])
+            profile: Profile = Profile.objects.get(user=request.user)
             profile.purchased_courses.add(course)
             profile.save()
 
@@ -150,123 +209,182 @@ class VerifyPaymentView(views.APIView):
 
 
 class CancelPaymentView(views.APIView):
+    """
+    View to handle payment cancellation.
+    """
 
     @catch_exception
     def post(self, request):
-        data = request.data
-        if not models.Purchase.objects.filter(
-            razorpay_order_id=data["razorpay_order_id"]
-        ).exists():
+        """
+        Cancel a payment by deleting the associated purchase record.
+        """
+        # Extract Razorpay order ID from request data
+        data: dict = request.data
+        razorpay_order_id: str = data.get("razorpay_order_id")
+
+        # Check if the purchase exists
+        purchase_exists: bool = models.Purchase.objects.filter(
+            razorpay_order_id=razorpay_order_id
+        ).exists()
+        if not purchase_exists:
             return Message.error("Order not found")
 
-        purchase = models.Purchase.objects.get(
-            razorpay_order_id=data["razorpay_order_id"]
+        # Fetch and delete the purchase record
+        purchase: models.Purchase = models.Purchase.objects.get(
+            razorpay_order_id=razorpay_order_id
         )
-
         purchase.delete()
 
         return Message.success("Payment cancelled")
 
 
 class CreateCouponView(views.APIView):
+    """
+    View to create a new coupon. Only accessible by admin users.
+    """
     permission_classes = [permissions.IsAdminUser]
 
     @catch_exception
     def post(self, request):
+        """
+        Create a new coupon using the provided data.
+        """
+        # Validate the request data using the serializer
         serializer = serializers.CreateCouponSerializer(data=request.data)
-
         if not serializer.is_valid():
             return Message.error(serializer.errors)
 
+        # Save the new coupon
         serializer.save()
 
-        new_coupon = models.CuponeCode.objects.get(id=serializer.data["id"])
+        # Fetch and serialize the newly created coupon
+        new_coupon: models.CuponeCode = models.CuponeCode.objects.get(
+            id=serializer.data["id"]
+        )
         new_serializer = serializers.ListCouponSerializer(new_coupon)
 
         return response.Response(new_serializer.data, status=status.HTTP_200_OK)
 
 
 class EditCouponView(views.APIView):
+    """
+    View to edit or delete an existing coupon. Only accessible by admin users.
+    """
     permission_classes = [permissions.IsAdminUser]
 
     @catch_exception
-    def post(self, request, id):
-        coupon = get_object_or_404(models.CuponeCode, id=id)
+    def post(self, request, id: int):
+        """
+        Edit an existing coupon with the provided data.
+        """
+        # Fetch the coupon or return 404 if not found
+        coupon: models.CuponeCode = get_object_or_404(models.CuponeCode, id=id)
+
+        # Validate and update the coupon using the serializer
         serializer = serializers.CreateCouponSerializer(
             coupon, data=request.data, partial=True
         )
-
         if not serializer.is_valid():
             return Message.error(serializer.errors)
 
         serializer.save()
 
-        updated_coupon = models.CuponeCode.objects.get(id=serializer.data["id"])
+        # Fetch and serialize the updated coupon
+        updated_coupon: models.CuponeCode = models.CuponeCode.objects.get(
+            id=serializer.data["id"]
+        )
         updated_serializer = serializers.ListCouponSerializer(updated_coupon)
 
         return response.Response(updated_serializer.data, status=status.HTTP_200_OK)
 
     @catch_exception
-    def delete(self, request, id):
-        coupon = get_object_or_404(models.CuponeCode, id=id)
+    def delete(self, request, id: int):
+        """
+        Delete an existing coupon.
+        """
+        # Fetch the coupon or return 404 if not found
+        coupon: models.CuponeCode = get_object_or_404(models.CuponeCode, id=id)
+
+        # Delete the coupon
         coupon.delete()
 
         return Message.success("Coupon is deleted")
 
 
 class ListCouponView(views.APIView):
+    """
+    View to list all coupons with pagination. Only accessible by admin users.
+    """
     permission_classes = [permissions.IsAdminUser]
 
     @catch_exception
     def get(self, request):
-        page_no = request.GET.get("page", 1)
-        page_size = request.GET.get("page_size", 2)
+        """
+        Retrieve a paginated list of coupons.
+        """
+        # Extract pagination parameters from the request
+        page_no: int = int(request.GET.get("page", 1))
+        page_size: int = int(request.GET.get("page_size", 2))
 
+        # Fetch and paginate the coupons
         coupons = models.CuponeCode.objects.all().order_by("-id")
         paginator = Paginator(coupons, page_size)
         page = paginator.page(page_no)
 
+        # Serialize the paginated coupons
         serializer = serializers.ListCouponSerializer(page, many=True)
 
-        response_data = {
+        # Prepare the response data
+        response_data: dict = {
             "results": serializer.data,
             "count": paginator.count,
             "next": pagination_next_url_builder(page, request.path),
         }
 
-        return response.Response(
-            response_data,
-            status=status.HTTP_200_OK,
-        )
+        return response.Response(response_data, status=status.HTTP_200_OK)
 
 
 class ApplyCouponView(views.APIView):
+    """
+    View to apply a coupon to a course. Only accessible by authenticated users.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     @catch_exception
-    def post(self, request, course_id):
-        coupon = request.data.get("coupon_code")
-        course = models.Course.objects.get(id=course_id)
+    def post(self, request, course_id: int):
+        """
+        Apply a coupon to a course and calculate the discounted price.
+        """
+        # Extract coupon code from the request data
+        coupon_code: str = request.data.get("coupon_code")
 
-        if not models.CuponeCode.objects.filter(code=coupon).exists():
+        # Fetch the course or return 404 if not found
+        course: models.Course = get_object_or_404(models.Course, id=course_id)
+
+        # Check if the coupon exists
+        coupon_exists: bool = models.CuponeCode.objects.filter(
+            code=coupon_code
+        ).exists()
+        if not coupon_exists:
             return Message.error("Coupon not found")
 
-        coupon = models.CuponeCode.objects.get(code=coupon)
+        # Fetch the coupon
+        coupon: models.CuponeCode = models.CuponeCode.objects.get(
+            code=coupon_code)
 
+        # Validate the coupon's status and availability
         if not coupon.is_active:
             return Message.error("Coupon is not active")
-
         if coupon.expiry < timezone.now().date():
             return Message.error("Coupon is expired")
-
         if not coupon.is_unlimited and coupon.used >= coupon.quantity:
             return Message.error("Coupon is out of stock")
 
-        discount = coupon.discount
-
-        price = course.price
-        total = calculateCoursePrice(price, course.offer)
-        total = total - discount if total > discount else 0
+        # Calculate the discounted price
+        discount: float = coupon.discount
+        price: int = course.price
+        total: float = calculate_course_price(price, course.offer)
+        total = max(total - discount, 0)
 
         return response.Response(
             {
@@ -279,68 +397,89 @@ class ApplyCouponView(views.APIView):
 
 
 class ListTransactionsView(views.APIView):
+    """
+    View to list all transactions with pagination. Only accessible by admin users.
+    """
     permission_classes = [permissions.IsAdminUser]
 
     @catch_exception
     def get(self, request):
-        page_no = request.GET.get("page", 1)
-        page_size = request.GET.get("page_size", 2)
+        """
+        Retrieve a paginated list of all transactions.
+        """
+        # Extract pagination parameters from the request
+        page_no: int = int(request.GET.get("page", 1))
+        page_size: int = int(request.GET.get("page_size", 2))
 
-        cache_key = f"transactions_{page_no}_{page_size}"
+        # Generate a cache key for the transactions
+        cache_key: str = f"transactions_{page_no}_{page_size}"
 
+        # Check if the data is cached
         cached_data = cache.get(cache_key)
         if cached_data:
             return response.Response(cached_data, status=status.HTTP_200_OK)
 
+        # Fetch and paginate the transactions
         purchases = models.Purchase.objects.all().order_by("-id")
         paginator = Paginator(purchases, page_size)
         page = paginator.page(page_no)
 
+        # Serialize the paginated transactions
         serializer = serializers.ListTransactionSerializer(page, many=True)
 
-        response_data = {
+        # Prepare the response data
+        response_data: dict = {
             "results": serializer.data,
             "count": paginator.count,
             "next": pagination_next_url_builder(page, request.path),
         }
 
+        # Cache the response data
         cache.set(cache_key, response_data, timeout=60)
 
-        return response.Response(
-            response_data,
-            status=status.HTTP_200_OK,
-        )
+        return response.Response(response_data, status=status.HTTP_200_OK)
 
 
 class ListSelfTransactionsView(views.APIView):
+    """
+    View to list a user's transactions with pagination. Only accessible by authenticated users.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     @catch_exception
     def get(self, request):
-        page_no = request.GET.get("page", 1)
-        page_size = request.GET.get("page_size", 2)
+        """
+        Retrieve a paginated list of the user's transactions.
+        """
+        # Extract pagination parameters from the request
+        page_no: int = int(request.GET.get("page", 1))
+        page_size: int = int(request.GET.get("page_size", 2))
 
-        cache_key = f"self_transactions_{page_no}_{page_size}"
+        # Generate a cache key for the user's transactions
+        cache_key: str = f"self_transactions_{page_no}_{page_size}"
 
+        # Check if the data is cached
         cached_data = cache.get(cache_key)
         if cached_data:
             return response.Response(cached_data, status=status.HTTP_200_OK)
 
-        purchases = models.Purchase.objects.filter(user=request.user).order_by("-id")
+        # Fetch and paginate the user's transactions
+        purchases = models.Purchase.objects.filter(
+            user=request.user).order_by("-id")
         paginator = Paginator(purchases, page_size)
         page = paginator.get_page(page_no)
 
+        # Serialize the paginated transactions
         serializer = serializers.ListTransactionSerializer(page, many=True)
 
-        response_data = {
+        # Prepare the response data
+        response_data: dict = {
             "results": serializer.data,
             "count": paginator.count,
             "next": pagination_next_url_builder(page, request.path),
         }
 
+        # Cache the response data
         cache.set(cache_key, response_data, timeout=60)
 
-        return response.Response(
-            response_data,
-            status=status.HTTP_200_OK,
-        )
+        return response.Response(response_data, status=status.HTTP_200_OK)
