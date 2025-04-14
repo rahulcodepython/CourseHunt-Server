@@ -35,15 +35,15 @@ class ListAllBlogsView(views.APIView):
         """
         # Extract pagination parameters from request
         page_no: int = int(request.GET.get("page", 1))
-        page_size: int = 2  # Fixed page size for pagination
+        page_size: int = 3  # Fixed page size for pagination
 
-        # Generate cache key based on page number
-        cache_key: str = f"all_blogs_{page_no}"
+        # # Generate cache key based on page number
+        # cache_key: str = f"all_blogs_{page_no}"
 
-        # Check if cached data exists
-        cached_data: Optional[Dict[str, Any]] = cache.get(cache_key)
-        if cached_data:
-            return response.Response(cached_data, status=status.HTTP_200_OK)
+        # # Check if cached data exists
+        # cached_data: Optional[Dict[str, Any]] = cache.get(cache_key)
+        # if cached_data:
+        #     return response.Response(cached_data, status=status.HTTP_200_OK)
 
         # Fetch blogs from the database
         blogs: QuerySet[Blog] = Blog.objects.all().order_by("-created_at")
@@ -61,7 +61,7 @@ class ListAllBlogsView(views.APIView):
         }
 
         # Cache the response data for 15 minutes
-        cache.set(cache_key, data, timeout=900)
+        # cache.set(cache_key, data, timeout=900)
         return response.Response(data, status=status.HTTP_200_OK)
 
 

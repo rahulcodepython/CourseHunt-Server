@@ -110,10 +110,10 @@ class InitiatePaymentView(views.APIView):
         discount: float = 0.0
         if is_discount:
             coupon_code_id: int = request.data.get("coupon_code")
-            coupon_exists: bool = models.CuponeCode.objects.filter(
+            coupon_exists: bool = models.CouponCode.objects.filter(
                 id=coupon_code_id).exists()
             if coupon_exists:
-                coupon: models.CuponeCode = models.CuponeCode.objects.get(
+                coupon: models.CouponCode = models.CouponCode.objects.get(
                     id=coupon_code_id)
                 discount = coupon.discount
 
@@ -187,10 +187,10 @@ class VerifyPaymentView(views.APIView):
             is_discount: bool = request.data.get("is_discount", False)
             if is_discount:
                 coupon_code_id: int = request.data.get("coupon_code")
-                coupon_exists: bool = models.CuponeCode.objects.filter(
+                coupon_exists: bool = models.CouponCode.objects.filter(
                     id=coupon_code_id).exists()
                 if coupon_exists:
-                    coupon: models.CuponeCode = models.CuponeCode.objects.get(
+                    coupon: models.CouponCode = models.CouponCode.objects.get(
                         id=coupon_code_id)
                     coupon.used += 1
                     coupon.save()
@@ -258,7 +258,7 @@ class CreateCouponView(views.APIView):
         serializer.save()
 
         # Fetch and serialize the newly created coupon
-        new_coupon: models.CuponeCode = models.CuponeCode.objects.get(
+        new_coupon: models.CouponCode = models.CouponCode.objects.get(
             id=serializer.data["id"]
         )
         new_serializer = serializers.ListCouponSerializer(new_coupon)
@@ -278,7 +278,7 @@ class EditCouponView(views.APIView):
         Edit an existing coupon with the provided data.
         """
         # Fetch the coupon or return 404 if not found
-        coupon: models.CuponeCode = get_object_or_404(models.CuponeCode, id=id)
+        coupon: models.CouponCode = get_object_or_404(models.CouponCode, id=id)
 
         # Validate and update the coupon using the serializer
         serializer = serializers.CreateCouponSerializer(
@@ -290,7 +290,7 @@ class EditCouponView(views.APIView):
         serializer.save()
 
         # Fetch and serialize the updated coupon
-        updated_coupon: models.CuponeCode = models.CuponeCode.objects.get(
+        updated_coupon: models.CouponCode = models.CouponCode.objects.get(
             id=serializer.data["id"]
         )
         updated_serializer = serializers.ListCouponSerializer(updated_coupon)
@@ -303,7 +303,7 @@ class EditCouponView(views.APIView):
         Delete an existing coupon.
         """
         # Fetch the coupon or return 404 if not found
-        coupon: models.CuponeCode = get_object_or_404(models.CuponeCode, id=id)
+        coupon: models.CouponCode = get_object_or_404(models.CouponCode, id=id)
 
         # Delete the coupon
         coupon.delete()
@@ -327,7 +327,7 @@ class ListCouponView(views.APIView):
         page_size: int = int(request.GET.get("page_size", 2))
 
         # Fetch and paginate the coupons
-        coupons = models.CuponeCode.objects.all().order_by("-id")
+        coupons = models.CouponCode.objects.all().order_by("-id")
         paginator = Paginator(coupons, page_size)
         page = paginator.page(page_no)
 
@@ -362,14 +362,14 @@ class ApplyCouponView(views.APIView):
         course: models.Course = get_object_or_404(models.Course, id=course_id)
 
         # Check if the coupon exists
-        coupon_exists: bool = models.CuponeCode.objects.filter(
+        coupon_exists: bool = models.CouponCode.objects.filter(
             code=coupon_code
         ).exists()
         if not coupon_exists:
             return Message.error("Coupon not found")
 
         # Fetch the coupon
-        coupon: models.CuponeCode = models.CuponeCode.objects.get(
+        coupon: models.CouponCode = models.CouponCode.objects.get(
             code=coupon_code)
 
         # Validate the coupon's status and availability

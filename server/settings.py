@@ -21,6 +21,21 @@ BASE_DIR: Path = Path(__file__).resolve().parent.parent
 # Secret key for the project (use environment variable or generate a random one)
 SECRET_KEY: str = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
 
+# Environment mode (development or production)
+ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+DEVELOPMENT: bool = ENVIRONMENT == "development"
+
+# Debug mode (set to False in production)
+DEBUG: bool = DEVELOPMENT
+
+# Allowed hosts for the application
+ALLOWED_HOSTS_ENV: str = os.getenv(
+    "ALLOWED_HOSTS", "0.0.0.0,127.0.0.1,localhost"
+)
+ALLOWED_HOSTS: list[str] = (
+    ALLOWED_HOSTS_ENV.split(",") if not DEVELOPMENT else ["*"]
+)
+
 # Installed applications
 INSTALLED_APPS: list[str] = [
     # Django default apps
@@ -57,6 +72,29 @@ MIDDLEWARE: list[str] = [
 
 # Root URL configuration
 ROOT_URLCONF: str = "server.urls"
+
+# Database configuration
+DATABASE_ENGINE: str = "django.db.backends.postgresql"  # Database engine
+# Database name from environment variable
+DATABASE_NAME: str = os.getenv("DB_NAME", "")
+# Database user from environment variable
+DATABASE_USER: str = os.getenv("DB_USER", "")
+# Database password from environment variable
+DATABASE_PASSWORD: str = os.getenv("DB_PASSWORD", "")
+DATABASE_HOST: str = os.getenv("DB_HOST", "")  # Database host
+DATABASE_PORT: str = os.getenv("DB_PORT", "")  # Database port
+
+# Setting up the DATABASES dictionary
+DATABASES: dict[str, dict[str, str]] = {
+    "default": {
+        "ENGINE": DATABASE_ENGINE,  # Database engine
+        "NAME": DATABASE_NAME,  # Database name
+        "USER": DATABASE_USER,  # Database user
+        "PASSWORD": DATABASE_PASSWORD,  # Database password
+        "HOST": DATABASE_HOST,  # Database host
+        "PORT": DATABASE_PORT,  # Database port
+    }
+}
 
 # Template configuration
 TEMPLATE_DIRS: list[Path] = [BASE_DIR / "templates"]
@@ -108,7 +146,7 @@ USE_TZ: bool = True
 
 # Static files configuration
 STATIC_URL: str = "static/"
-STATIC_ROOT: Path = BASE_DIR.parent / "static"
+STATIC_ROOT: Path = BASE_DIR / "static"
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
@@ -119,6 +157,11 @@ REST_FRAMEWORK: dict = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     )
 }
+
+# Cors configuration
+CORS_ALLOW_ALL_ORIGINS: bool = DEVELOPMENT
+CORS_ALLOWED_ORIGINS: list[str] = os.getenv(
+    "CORS_ALLOWED_ORIGINS", "").split(",") if not DEVELOPMENT else []
 
 # Authentication configuration
 AUTH_CONFIG: dict = {"LOGIN_FIELD": "username"}

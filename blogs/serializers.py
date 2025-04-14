@@ -99,7 +99,6 @@ class BaseCommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = "__all__"  # Include all fields from the Comment model
 
 
 class ListCommentSerializer(BaseCommentSerializer):

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Purchase, CuponeCode  # Import only required models
+from .models import Purchase, CouponCode  # Import only required models
 
 
 @admin.register(Purchase)
@@ -17,10 +17,10 @@ class PurchaseAdmin(admin.ModelAdmin):
     )
 
 
-@admin.register(CuponeCode)
-class CuponeCodeAdmin(admin.ModelAdmin):
+@admin.register(CouponCode)
+class CouponCodeAdmin(admin.ModelAdmin):
     """
-    Admin configuration for the CuponeCode model.
+    Admin configuration for the CouponCode model.
     Displays relevant fields in the admin panel.
     """
     # Fields to display in the admin list view

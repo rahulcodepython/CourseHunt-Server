@@ -10,4 +10,4 @@ class CourseConfig(AppConfig):
     default_auto_field: str = 'django.db.models.BigAutoField'
 
     # Defining the name of the application
-    name = 'course'
+    name: str = 'course'

@@ -17,7 +17,7 @@ class BaseCouponSerializer(serializers.ModelSerializer):
         """
         Meta class for BaseCouponSerializer.
         """
-        model = models.CuponeCode  # Specify the model
+        model = models.CouponCode  # Specify the model
         fields = "__all__"  # Include all fields from the model
 
 
@@ -29,7 +29,7 @@ class CreateCouponSerializer(serializers.ModelSerializer):
     class Meta(BaseCouponSerializer.Meta):
         pass  # Inherit Meta from BaseCouponSerializer
 
-    def create(self, validated_data: dict) -> models.CuponeCode:
+    def create(self, validated_data: dict) -> models.CouponCode:
         """
         Create a new coupon instance.
         """
@@ -40,7 +40,7 @@ class CreateCouponSerializer(serializers.ModelSerializer):
                 {"error": f"Failed to create coupon: {str(e)}"}
             )  # Handle runtime errors gracefully
 
-    def update(self, instance: models.CuponeCode, validated_data: dict) -> models.CuponeCode:
+    def update(self, instance: models.CouponCode, validated_data: dict) -> models.CouponCode:
         """
         Update an existing coupon instance.
         """

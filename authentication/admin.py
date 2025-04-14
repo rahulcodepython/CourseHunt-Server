@@ -23,7 +23,6 @@ class UserAdmin(admin.ModelAdmin):
     list_display: List[str] = USER_DISPLAY_FIELDS
     search_fields: List[str] = ["email", "username"]
     list_filter: List[str] = ["is_active", "is_superuser"]
-    ordering: List[str] = ["-date_joined"]
 
 
 @admin.register(models.ActivationCode)

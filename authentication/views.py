@@ -503,7 +503,8 @@ class CreateJWTView(views.APIView):
                     username=user.username,
                     password=password
                 )
-                if not authenticated_user:
+
+                if authenticated_user is None:
                     return Message.error(
                         msg="Invalid email or password. Please try again."
                     )

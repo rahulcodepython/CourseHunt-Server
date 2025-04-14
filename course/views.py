@@ -34,12 +34,12 @@ class ListCoursesView(views.APIView):
     API view to list all published courses with pagination and caching.
     """
 
-    def get_cache_key(self, request: views.Request, page_no: int) -> str:
-        """
-        Generate a cache key based on user authentication and page number.
-        """
-        user_key = f"{request.user}" if request.user.is_authenticated else "anonymous"
-        return f"list_all_published_courses_{user_key}_page_{page_no}"
+    # def get_cache_key(self, request: views.Request, page_no: int) -> str:
+    #     """
+    #     Generate a cache key based on user authentication and page number.
+    #     """
+    #     user_key = f"{request.user}" if request.user.is_authenticated else "anonymous"
+    #     return f"list_all_published_courses_{user_key}_page_{page_no}"
 
     @catch_exception
     def get(self, request: views.Request) -> response.Response:
@@ -48,16 +48,16 @@ class ListCoursesView(views.APIView):
         """
         page_no: int = int(request.GET.get("page", 1))
 
-        # Check cache for existing data
-        cache_key: str = self.get_cache_key(request, page_no)
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return response.Response(cached_data, status=status.HTTP_200_OK)
+        # # Check cache for existing data
+        # cache_key: str = self.get_cache_key(request, page_no)
+        # cached_data = cache.get(cache_key)
+        # if cached_data:
+        #     return response.Response(cached_data, status=status.HTTP_200_OK)
 
         # Fetch and paginate courses
         courses = models.Course.objects.filter(
             status="published").order_by("-id")
-        paginator = Paginator(courses, 2)
+        paginator = Paginator(courses, 3)
         page = paginator.get_page(page_no)
 
         # Serialize data
@@ -75,8 +75,8 @@ class ListCoursesView(views.APIView):
             "next": pagination_next_url_builder(page, request.path),
         }
 
-        # Cache the response
-        cache.set(cache_key, response_data, timeout=60)
+        # # Cache the response
+        # cache.set(cache_key, response_data, timeout=60)
 
         return response.Response(response_data, status=status.HTTP_200_OK)
 

@@ -53,22 +53,22 @@ USER_DATA_PATTERNS: List[URLPattern] = [
 OAUTH_PATTERNS: List[URLPattern] = [
     path(
         "github/auth/",
-        views.github_auth_redirect.as_view(),
+        views.GithubAuthRedirect.as_view(),
         name="github_auth_redirect",
     ),
     path(
         "github/authenticate/",
-        views.github_authenticate.as_view(),
+        views.GithubAuthenticate.as_view(),
         name="github_authenticate",
     ),
     path(
         "google/auth/",
-        views.google_auth_redirect.as_view(),
+        views.GoogleAuthRedirect.as_view(),
         name="google_auth_redirect",
     ),
     path(
         "google/authenticate/",
-        views.google_authenticate.as_view(),
+        views.GoogleAuthenticate.as_view(),
         name="google_authenticate",
     ),
 ]

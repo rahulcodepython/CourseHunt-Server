@@ -19,9 +19,7 @@ class BaseCourseSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = models.Course  # Reference to the Course model
-        # Placeholder for fields, to be defined in child classes
-        fields: list[str] = []
+        model = models.Course  # Reference to the Course
 
 
 class CreateCourseSerializer(BaseCourseSerializer):
