@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, TypedDict, List
 from django.contrib.auth import get_user_model, authenticate
-from django.core.cache import cache
 from django.utils.timezone import localtime, now
 from rest_framework import views, response, status, permissions
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -17,7 +16,6 @@ from server.utils import redirect_uri_builder
 
 # Constants
 TOKEN_LENGTH: int = 4
-CACHE_TIMEOUT: int = 300
 OTP_EXPIRY_MINUTES: int = 10
 
 
@@ -135,14 +133,7 @@ class UserViews(BaseCodeMixin, views.APIView):
         if not self.check_authenticated_user(request.user):
             return Message.error(msg="You are not authenticated yet. Try again.")
 
-        cache_key: str = f"login_{request.user.username}"
-        cached_data: Optional[Dict] = cache.get(cache_key)
-
-        if cached_data:
-            return response.Response(cached_data, status=status.HTTP_200_OK)
-
         serialized_data = serializers.UserSerializer(request.user).data
-        cache.set(cache_key, serialized_data, timeout=CACHE_TIMEOUT)
         return response.Response(serialized_data, status=status.HTTP_200_OK)
 
     @catch_exception
@@ -825,12 +816,6 @@ class ListAllUser(views.APIView):
         Returns:
             Response with serialized user data
         """
-        cache_key: str = "all_users"
-        cached_data: Optional[List[Dict[str, Any]]] = cache.get(cache_key)
-
-        if cached_data:
-            return response.Response(cached_data, status=status.HTTP_200_OK)
-
         try:
             # Get and serialize all users
             users: List[models.User] = User.objects.all().order_by(
@@ -838,9 +823,6 @@ class ListAllUser(views.APIView):
             serialized_data: List[Dict[str, Any]] = (
                 serializers.UserSerializer(users, many=True).data
             )
-
-            # Cache the results
-            cache.set(cache_key, serialized_data, timeout=CACHE_TIMEOUT)
 
             return response.Response(serialized_data, status=status.HTTP_200_OK)
 
@@ -865,10 +847,6 @@ class GithubAuthRedirect(views.APIView):
         """
         # Generate unique state token
         state: str = str(uuid.uuid4())
-        cache_timeout: int = 300  # 5 minutes
-
-        # Store state in cache for validation
-        cache.set(f"github_oauth_state_{state}", True, timeout=cache_timeout)
 
         # Build authorization URL
         auth_params: Dict[str, str] = {
@@ -912,12 +890,6 @@ class GithubAuthenticate(views.APIView):
             return Message.error(msg="Authorization code not provided")
         if not state:
             return Message.error(msg="State parameter is missing")
-
-        # Validate state token
-        state_key: str = f"github_oauth_state_{state}"
-        if not cache.get(state_key):
-            return Message.error(msg="Invalid or expired state parameter")
-        cache.delete(state_key)
 
         try:
             # Exchange code for access token

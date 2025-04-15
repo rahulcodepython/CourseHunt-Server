@@ -1,11 +1,9 @@
 from rest_framework import views, status, response, permissions
 from typing import Dict, Any, Optional
-from django.core.cache import cache
 from django.core.paginator import Paginator, Page
 from django.http import HttpRequest
 from django.db.models.query import QuerySet
 from django.shortcuts import get_object_or_404
-
 from .models import Blog, Comment
 from server.decorators import catch_exception
 from .serializers import (
@@ -37,14 +35,6 @@ class ListAllBlogsView(views.APIView):
         page_no: int = int(request.GET.get("page", 1))
         page_size: int = 3  # Fixed page size for pagination
 
-        # # Generate cache key based on page number
-        # cache_key: str = f"all_blogs_{page_no}"
-
-        # # Check if cached data exists
-        # cached_data: Optional[Dict[str, Any]] = cache.get(cache_key)
-        # if cached_data:
-        #     return response.Response(cached_data, status=status.HTTP_200_OK)
-
         # Fetch blogs from the database
         blogs: QuerySet[Blog] = Blog.objects.all().order_by("-created_at")
         paginator: Paginator = Paginator(blogs, page_size)
@@ -60,8 +50,6 @@ class ListAllBlogsView(views.APIView):
             "next": pagination_next_url_builder(page, request.path),
         }
 
-        # Cache the response data for 15 minutes
-        # cache.set(cache_key, data, timeout=900)
         return response.Response(data, status=status.HTTP_200_OK)
 
 
@@ -116,14 +104,6 @@ class ReadBlogView(views.APIView):
         Returns:
             Response with blog data.
         """
-        # Generate cache key for the blog
-        cache_key: str = f"blogs_{blog_id}"
-
-        # Check if cached data exists
-        cached_data: Optional[Dict[str, Any]] = cache.get(cache_key)
-        if cached_data:
-            return response.Response(cached_data, status=status.HTTP_200_OK)
-
         # Fetch the blog from the database
         blog: Blog = get_object_or_404(Blog, id=blog_id)
 
@@ -131,8 +111,6 @@ class ReadBlogView(views.APIView):
         serialized_data = ReadBlogPostSerializer(
             blog, context={"request": request}).data
 
-        # Cache the serialized data
-        cache.set(cache_key, serialized_data, timeout=900)
         return response.Response(serialized_data, status=status.HTTP_200_OK)
 
 
@@ -167,8 +145,6 @@ class CreateCommentView(views.APIView):
         serialized_data.pop("blog", None)
         serialized_data.pop("parent", None)
 
-        # Clear the cache for the blog
-        cache.delete(f"blogs_{request.data['blog']}")
         return response.Response(serialized_data, status=status.HTTP_201_CREATED)
 
 
@@ -202,9 +178,8 @@ class LikeBlogView(views.APIView):
             blog.likes += 1
             liked: bool = True
 
-        # Save the blog and clear the cache
+        # Save the blog
         blog.save()
-        cache.delete(f"blogs_{blog_id}")
         return response.Response({"liked": liked}, status=status.HTTP_200_OK)
 
 
@@ -267,7 +242,7 @@ class UpdateBlogView(views.APIView):
             blog, data=request.data, partial=True)
         serialized.is_valid(raise_exception=True)
         serialized.save()
-        cache.delete(f"blogs_{blog_id}")
+
         return Message.success(msg="Blog is updated.")
 
     @catch_exception
@@ -284,7 +259,7 @@ class UpdateBlogView(views.APIView):
         """
         blog: Blog = get_object_or_404(Blog, id=blog_id)
         blog.delete()
-        cache.delete(f"blogs_{blog_id}")
+
         return Message.success(msg="Blog is deleted.")
 
 
@@ -307,7 +282,7 @@ class UpdateComment(views.APIView):
         comment: Comment = get_object_or_404(Comment, id=comment_id)
         comment.content = request.data["content"]
         comment.save()
-        cache.delete(f"blogs_{comment.blog.id}")
+
         return response.Response(
             {"content": comment.content, "id": comment_id}, status=status.HTTP_200_OK
         )
@@ -326,5 +301,5 @@ class UpdateComment(views.APIView):
         """
         comment: Comment = get_object_or_404(Comment, id=comment_id)
         comment.delete()
-        cache.delete(f"blogs_{comment.blog.id}")
+
         return Message.success(msg="Comment is deleted.")

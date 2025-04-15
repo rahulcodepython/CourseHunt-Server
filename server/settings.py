@@ -120,16 +120,6 @@ AUTH_USER_MODEL: str = "authentication.User"
 # WSGI application
 WSGI_APPLICATION: str = "server.wsgi.application"
 
-# Cache configuration
-CACHE_BACKEND: str = "django.core.cache.backends.db.DatabaseCache"
-CACHE_LOCATION: str = "my_cache_table"
-CACHES: dict = {
-    "default": {
-        "BACKEND": CACHE_BACKEND,
-        "LOCATION": CACHE_LOCATION,
-    }
-}
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS: list[dict] = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

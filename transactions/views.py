@@ -9,7 +9,6 @@ from django.core.paginator import Paginator
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.core.cache import cache
 from authentication.models import Profile
 from server.message import Message
 from server.decorators import catch_exception
@@ -411,14 +410,6 @@ class ListTransactionsView(views.APIView):
         page_no: int = int(request.GET.get("page", 1))
         page_size: int = int(request.GET.get("page_size", 2))
 
-        # Generate a cache key for the transactions
-        cache_key: str = f"transactions_{page_no}_{page_size}"
-
-        # Check if the data is cached
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return response.Response(cached_data, status=status.HTTP_200_OK)
-
         # Fetch and paginate the transactions
         purchases = models.Purchase.objects.all().order_by("-id")
         paginator = Paginator(purchases, page_size)
@@ -433,9 +424,6 @@ class ListTransactionsView(views.APIView):
             "count": paginator.count,
             "next": pagination_next_url_builder(page, request.path),
         }
-
-        # Cache the response data
-        cache.set(cache_key, response_data, timeout=60)
 
         return response.Response(response_data, status=status.HTTP_200_OK)
 
@@ -455,14 +443,6 @@ class ListSelfTransactionsView(views.APIView):
         page_no: int = int(request.GET.get("page", 1))
         page_size: int = int(request.GET.get("page_size", 2))
 
-        # Generate a cache key for the user's transactions
-        cache_key: str = f"self_transactions_{page_no}_{page_size}"
-
-        # Check if the data is cached
-        cached_data = cache.get(cache_key)
-        if cached_data:
-            return response.Response(cached_data, status=status.HTTP_200_OK)
-
         # Fetch and paginate the user's transactions
         purchases = models.Purchase.objects.filter(
             user=request.user).order_by("-id")
@@ -478,8 +458,5 @@ class ListSelfTransactionsView(views.APIView):
             "count": paginator.count,
             "next": pagination_next_url_builder(page, request.path),
         }
-
-        # Cache the response data
-        cache.set(cache_key, response_data, timeout=60)
 
         return response.Response(response_data, status=status.HTTP_200_OK)

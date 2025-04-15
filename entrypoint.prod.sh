@@ -7,9 +7,6 @@ echo "Running database migrations..."
 python manage.py makemigrations
 python manage.py migrate
 
-echo "Creating cache table..."
-python manage.py createcachetable
-
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
