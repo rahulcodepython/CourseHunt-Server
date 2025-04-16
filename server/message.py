@@ -8,7 +8,7 @@ class Message:
     """
 
     @staticmethod
-    def warn(msg: str) -> Response:
+    def warn(msg: str, data: dict = {}) -> Response:
         """
         Returns a warning response with a 406 Not Acceptable status code.
 
@@ -18,13 +18,13 @@ class Message:
         Returns:
             Response: A DRF Response object with the warning message and status code.
         """
-        response_data: dict = {"error": msg}  # Prepare response data
+        response_data: dict = {"error": msg, **data}  # Prepare response data
         response_status: int = status.HTTP_406_NOT_ACCEPTABLE  # Set status code
         # Return response
         return Response(response_data, status=response_status)
 
     @staticmethod
-    def error(msg: str) -> Response:
+    def error(msg: str, data: dict = {}) -> Response:
         """
         Returns an error response with a 400 Bad Request status code.
 
@@ -34,13 +34,13 @@ class Message:
         Returns:
             Response: A DRF Response object with the error message and status code.
         """
-        response_data: dict = {"error": msg}  # Prepare response data
+        response_data: dict = {"error": msg, **data}  # Prepare response data
         response_status: int = status.HTTP_400_BAD_REQUEST  # Set status code
         # Return response
         return Response(response_data, status=response_status)
 
     @staticmethod
-    def success(msg: str) -> Response:
+    def success(msg: str, data: dict = {}) -> Response:
         """
         Returns a success response with a 200 OK status code.
 
@@ -50,13 +50,13 @@ class Message:
         Returns:
             Response: A DRF Response object with the success message and status code.
         """
-        response_data: dict = {"success": msg}  # Prepare response data
+        response_data: dict = {"success": msg, **data}  # Prepare response data
         response_status: int = status.HTTP_200_OK  # Set status code
         # Return response
         return Response(response_data, status=response_status)
 
     @staticmethod
-    def create(msg: str) -> Response:
+    def create(msg: str, data: dict = {}) -> Response:
         """
         Returns a creation success response with a 201 Created status code.
 
@@ -66,7 +66,7 @@ class Message:
         Returns:
             Response: A DRF Response object with the success message and status code.
         """
-        response_data: dict = {"success": msg}  # Prepare response data
+        response_data: dict = {"success": msg, **data}  # Prepare response data
         response_status: int = status.HTTP_201_CREATED  # Set status code
         # Return response
         return Response(response_data, status=response_status)

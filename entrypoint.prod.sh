@@ -7,8 +7,8 @@ echo "Running database migrations..."
 python manage.py makemigrations
 python manage.py migrate
 
-echo "Collecting static files..."
-python manage.py collectstatic --noinput
+# echo "Collecting static files..."
+# python manage.py collectstatic --noinput
 
 # Uncomment this line if you want to create a superuser automatically
 # echo "Creating superuser..."

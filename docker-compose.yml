@@ -1,0 +1,105 @@
+networks:
+    app_network:
+        driver: bridge
+
+services:
+    postgresdb:
+        image: postgres
+
+        container_name: courseHunt-postgresdb-app
+
+        restart: always
+
+        ports:
+            - "5432:5432" # Ensure no other service is running on this port
+
+        environment:
+            - POSTGRES_DB=postgres
+            - POSTGRES_USER=rahul
+            - POSTGRES_PASSWORD=admin
+
+        volumes:
+            - ./data/postgresdb:/var/lib/postgresql/data
+
+        networks:
+            - app_network
+
+    adminer:
+        image: adminer
+
+        container_name: courseHunt-adminer-app
+
+        restart: always
+
+        ports:
+            - "8080:8080"
+
+        networks:
+            - app_network
+
+        depends_on:
+            - postgresdb
+
+    # backend:
+    #     build:
+    #         context: ./server
+    #         # dockerfile: Dockerfile.prod
+    #         dockerfile: Dockerfile.dev
+
+    #     container_name: courseHunt-backend-app
+
+    #     restart: always
+
+    #     volumes:
+    #         - staticfiles:/app/static
+    #         - ./server:/app
+
+    #     ports:
+    #         - "8000:8000"
+
+    #     depends_on:
+    #         - postgresdb
+
+    #     networks:
+    #         - app_network
+
+    # frontend:
+    #     build:
+    #         context: ./client
+    #         # dockerfile: Dockerfile.prod
+    #         dockerfile: Dockerfile.dev
+
+    #     container_name: courseHunt-frontend-app
+
+    #     volumes:
+    #         - /app/node_modules
+    #         - ./client:/app
+
+    #     restart: always
+
+    #     networks:
+    #         - app_network
+
+    #     ports:
+    #         - "3000:3000"
+
+    # nginx:
+    #     build: ./nginx
+
+    #     container_name: coursehunt-nginx-app
+
+    #     ports:
+    #         - 80:80
+
+    #     networks:
+    #         - app_network
+
+    #     volumes:
+    #         - staticfiles:/app/static
+
+    #     depends_on:
+    #         - backend
+    #         - frontend
+
+volumes:
+    staticfiles:

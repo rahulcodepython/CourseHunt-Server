@@ -47,10 +47,6 @@ INSTALLED_APPS: list[str] = [
     "django.contrib.staticfiles",
     # Custom apps
     "authentication",
-    "course",
-    "feedback",
-    "transactions",
-    "blogs",
     # Third-party packages
     "rest_framework",
     "corsheaders",
@@ -97,7 +93,7 @@ DATABASES: dict[str, dict[str, str]] = {
 }
 
 # Template configuration
-TEMPLATE_DIRS: list[Path] = [BASE_DIR / "templates"]
+TEMPLATE_DIRS: list[Path] = []
 TEMPLATES: list[dict] = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -136,16 +132,18 @@ USE_TZ: bool = True
 
 # Static files configuration
 STATIC_URL: str = "static/"
-STATIC_ROOT: Path = BASE_DIR / "static"
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
 
 # Django REST Framework configuration
 REST_FRAMEWORK: dict = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-    )
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'authentication.authentication.CookieJWTAuthentication',
+    ),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticated",
+    ),
 }
 
 # Cors configuration
@@ -155,22 +153,6 @@ CORS_ALLOWED_ORIGINS: list[str] = os.getenv(
 
 # Authentication configuration
 AUTH_CONFIG: dict = {"LOGIN_FIELD": "username"}
-
-# Email setup
-EMAIL_BACKEND: str = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST: str = "smtp.gmail.com"
-EMAIL_USE_TLS: bool = True
-EMAIL_PORT: int = 587
-EMAIL_HOST_USER: str = os.getenv("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD: str = os.getenv("EMAIL_HOST_PASSWORD", "")
-COMPANY_NAME: str = "CourseHunt"
-
-# Process configuration
-SEND_ACTIVATION_EMAIL: bool = True
-SEND_RESET_PASSWORD_CONFIRMATION_EMAIL: bool = True
-SEND_RESET_EMAIL_CONFIRMATION_EMAIL: bool = True
-SEND_LOGIN_CONFIRMATION_EMAIL: bool = False
-OTP_VERIFICATION_LOGIN: bool = False
 
 # JWT configuration
 SIMPLE_JWT: dict = {
@@ -182,22 +164,10 @@ SIMPLE_JWT: dict = {
     "AUTH_HEADER_TYPES": ("Bearer",),
     "USER_ID_FIELD": "username",
     "USER_ID_CLAIM": "username",
+    "AUTH_COOKIE_SECURE": True,
+    "AUTH_COOKIE_SAMESITE": "Lax",
+    "AUTH_COOKIE_HTTP_ONLY": True,
 }
 
-# Frontend and backend URLs
-BASE_APP_URL: str = os.getenv("BASE_APP_URL", "")
-BASE_API_URL: str = os.getenv("BASE_API_URL", "")
-
-# GitHub OAuth details
-GITHUB_CLIENT_ID: str = os.getenv("GITHUB_CLIENT_ID", "")
-GITHUB_CLIENT_SECRET: str = os.getenv("GITHUB_CLIENT_SECRET", "")
-GITHUB_REDIRECT_URI: str = os.getenv("GITHUB_REDIRECT_URI", "")
-
-# Google OAuth details
-GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
-GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "")
-
-# Razorpay configuration
-RAZORPAY_API_KEY: str = os.getenv("RAZORPAY_API_KEY", "")
-RAZORPAY_SECRET_KEY: str = os.getenv("RAZORPAY_SECRET_KEY", "")
+# CONSTANTS
+SITE_NAME: str = "CourseHunt"

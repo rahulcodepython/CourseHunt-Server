@@ -26,25 +26,4 @@ urlpatterns: list = [
     # Authentication module routes
     # Include authentication app URLs
     path(f"{base_api_path}auth/", include("authentication.urls")),
-
-    # Course module routes
-    # Include course app URLs
-    path(f"{base_api_path}course/", include("course.urls")),
-
-    # Feedback module routes
-    # Include feedback app URLs
-    path(f"{base_api_path}feedback/", include("feedback.urls")),
-
-    # Transactions module routes
-    # Include transactions app URLs
-    path(f"{base_api_path}transactions/", include("transactions.urls")),
-
-    # Blogs module routes
-    # Include blogs app URLs
-    path(f"{base_api_path}blogs/", include("blogs.urls")),
 ]
-
-# Add static file serving routes (only in development mode)
-if settings.DEBUG:  # Ensure static files are served only in DEBUG mode
-    urlpatterns += static(settings.STATIC_URL,
-                          document_root=settings.STATIC_ROOT)
