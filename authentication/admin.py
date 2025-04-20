@@ -26,3 +26,12 @@ class UserAdmin(admin.ModelAdmin):
     ]
     search_fields: List[str] = ["email", "username"]
     list_filter: List[str] = ["is_active", "is_superuser"]
+
+
+@admin.register(models.Instructor)
+class InstructorAdmin(admin.ModelAdmin):
+    """Admin interface for Instructor model with customized display fields."""
+
+    list_display: List[str] = [
+        "user"
+    ]

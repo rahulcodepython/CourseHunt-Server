@@ -8,7 +8,7 @@ from django.conf import settings
 User: Type[Any] = get_user_model()
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserCreateSerializer(serializers.ModelSerializer):
     """
     Serializer for general user data representation.
     Used for reading user information.
@@ -39,3 +39,13 @@ class UserSerializer(serializers.ModelSerializer):
             user.set_password(password)
             user.save()
         return user
+
+class UserListSerializer(serializers.ModelSerializer):
+    """
+    Serializer for listing users.
+    Used for reading user information.
+    """
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name', 'image', 'is_active', 'is_superuser')

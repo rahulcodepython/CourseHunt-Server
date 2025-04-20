@@ -47,6 +47,8 @@ INSTALLED_APPS: list[str] = [
     "django.contrib.staticfiles",
     # Custom apps
     "authentication",
+    "course",
+    "instructor",
     # Third-party packages
     "rest_framework",
     "corsheaders",

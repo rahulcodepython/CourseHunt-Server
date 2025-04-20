@@ -32,6 +32,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     first_name = models.CharField(max_length=100, blank=True)
     last_name = models.CharField(max_length=100, blank=True)
+    image = models.CharField(max_length=100, blank=True, null=True)
     method = models.CharField(
         max_length=50,
         default="Credentials",
@@ -43,13 +44,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=False)
     is_superuser = models.BooleanField(default=False)
 
-    # purchased_courses = models.ManyToManyField(
-    #     "course.Course",
-    #     blank=True,
-    #     related_name='purchasers'
-    # )
-
-    image = models.CharField(max_length=100, blank=True, null=True)
     country = models.CharField(
         max_length=100, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
@@ -74,3 +68,18 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self) -> str:
         return self.username
+
+
+class Instructor(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bio = models.TextField(blank=True, null=True)
+    role = models.CharField(
+        max_length=100, blank=True, null=True)
+    no_courses = models.IntegerField(default=0)
+    no_students = models.IntegerField(default=0)
+    no_reviews = models.FloatField(default=0.0)
+    no_followers = models.IntegerField(default=0)
+    no_years_experience = models.IntegerField(default=0)
+
+    def __str__(self) -> str:
+        return self.user.username
