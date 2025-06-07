@@ -1,9 +1,6 @@
-from typing import Any  # For type hinting
 from rest_framework.views import APIView  # Import only the required class
 from rest_framework.request import Request  # For type hinting request
 from rest_framework.response import Response  # For type hinting response
-from django.db import connections
-from django.db.utils import OperationalError
 from .decorators import catch_exception
 from .message import Message
 # For allowing any user to access the view

@@ -1,14 +1,13 @@
-from django.contrib.auth import get_user_model
+from authentication.models import User
 from django.db import models
 from authentication.models import Instructor
 
-User = get_user_model()
-
-LEVEL =(
+LEVEL = (
     ('beginner', 'Beginner'),
     ('intermediate', 'Intermediate'),
     ('advanced', 'Advanced'),
 )
+
 
 class Course(models.Model):
     id = models.CharField(max_length=255, primary_key=True, unique=True)
@@ -35,7 +34,8 @@ class Course(models.Model):
         max_digits=5, decimal_places=2, default=0.00)
     total_lectures = models.PositiveIntegerField(default=0)
     language = models.CharField(max_length=255, blank=True, null=True)
-    level = models.CharField(max_length=255, blank=True, null=True, choices=LEVEL)
+    level = models.CharField(max_length=255, blank=True,
+                             null=True, choices=LEVEL)
     category = models.CharField(max_length=255, blank=True, null=True)
     subtitles = models.BooleanField(default=False)
     keywords = models.CharField(max_length=255, blank=True, null=True)
@@ -61,10 +61,12 @@ class Module(models.Model):
     def __str__(self):
         return self.title
 
+
 LECTURE_TYPE = (
     ('video', 'Video'),
     ('document', 'Document'),
 )
+
 
 class Lecture(models.Model):
     id = models.CharField(max_length=255, primary_key=True, unique=True)
@@ -105,9 +107,11 @@ class UserCourse(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.course.title}"
 
+
 class FAQ(models.Model):
     id = models.CharField(max_length=255, primary_key=True, unique=True)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="faqs_course")
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name="faqs_course")
     question = models.TextField()
     answer = models.TextField()
 

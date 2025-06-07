@@ -1,17 +1,14 @@
 from typing import TypedDict
-from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import models
+# Assuming User model is defined in authentication.models
+from authentication.models import User
 
 
 class TokenDict(TypedDict):
     """Type definition for JWT token response"""
     refresh: str
     access: str
-
-
-# Get User model at module level
-User = get_user_model()
 
 
 def GenerateToken(user: models.User) -> TokenDict:

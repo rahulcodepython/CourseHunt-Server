@@ -83,14 +83,20 @@ DATABASE_HOST: str = os.getenv("DB_HOST", "")  # Database host
 DATABASE_PORT: str = os.getenv("DB_PORT", "")  # Database port
 
 # Setting up the DATABASES dictionary
-DATABASES: dict[str, dict[str, str]] = {
-    "default": {
-        "ENGINE": DATABASE_ENGINE,  # Database engine
-        "NAME": DATABASE_NAME,  # Database name
-        "USER": DATABASE_USER,  # Database user
-        "PASSWORD": DATABASE_PASSWORD,  # Database password
-        "HOST": DATABASE_HOST,  # Database host
-        "PORT": DATABASE_PORT,  # Database port
+# DATABASES: dict[str, dict[str, str]] = {
+#     "default": {
+#         "ENGINE": DATABASE_ENGINE,  # Database engine
+#         "NAME": DATABASE_NAME,  # Database name
+#         "USER": DATABASE_USER,  # Database user
+#         "PASSWORD": DATABASE_PASSWORD,  # Database password
+#         "HOST": DATABASE_HOST,  # Database host
+#         "PORT": DATABASE_PORT,  # Database port
+#     }
+# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -140,9 +146,6 @@ DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
 
 # Django REST Framework configuration
 REST_FRAMEWORK: dict = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'authentication.authentication.CookieJWTAuthentication',
-    ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),

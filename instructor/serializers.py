@@ -3,6 +3,7 @@ from authentication.models import Instructor
 from course.models import Course
 from authentication.serializers import UserListSerializer
 
+
 class BaseInstructorSerializer(serializers.ModelSerializer):
     """
     Base serializer for instructor models.
@@ -13,6 +14,7 @@ class BaseInstructorSerializer(serializers.ModelSerializer):
         model = Instructor
         fields = '__all__'
 
+
 class InstructorDetailSerializer(BaseInstructorSerializer):
     courses = serializers.SerializerMethodField()
     """
@@ -22,7 +24,8 @@ class InstructorDetailSerializer(BaseInstructorSerializer):
         pass
 
     def get_courses(self, obj):
-        from course.serializers import CourseListForAllUsersSerializer # Lazy import to avoid circular dependency
+        # Lazy import to avoid circular dependency
+        from course.serializers import CourseListForAllUsersSerializer
 
         courses = Course.objects.filter(instructor=obj)
         serialized = CourseListForAllUsersSerializer(courses, many=True)
@@ -35,3 +38,9 @@ class InstructorListSerializer(BaseInstructorSerializer):
     """
     class Meta(BaseInstructorSerializer.Meta):
         pass
+
+
+class InstructorCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Instructor
+        fields = '__all__'

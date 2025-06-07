@@ -1,10 +1,7 @@
 from rest_framework import serializers
 from .models import Course, Module, Lecture, UserCourse, FAQ
-from django.contrib.auth import get_user_model
 from instructor.serializers import BaseInstructorSerializer
 from authentication.serializers import UserListSerializer
-
-User = get_user_model()
 
 
 def duration_to_parsed_time(duration):

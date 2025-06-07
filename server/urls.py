@@ -27,7 +27,7 @@ urlpatterns: list = [
     # Include authentication app URLs
     path(f"{base_api_path}auth/", include("authentication.urls")),
 
-    # Include course app URLs
+    # # Include course app URLs
     path(f"{base_api_path}course/", include("course.urls")),
 
     path(f"{base_api_path}instructor/", include("instructor.urls")),

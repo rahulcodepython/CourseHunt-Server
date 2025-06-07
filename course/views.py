@@ -14,6 +14,7 @@ from authentication.models import User
 
 USER = User.objects.get(username="rahul")
 
+
 class CourseListForAllUsers(generics.ListAPIView):
     # get request
     permission_classes = [permissions.AllowAny]
@@ -26,6 +27,7 @@ class CourseListForAllUsers(generics.ListAPIView):
 
     def get_queryset(self):
         return Course.objects.filter(is_published=True)
+
 
 class CourseDetailForAllUsers(generics.RetrieveAPIView):
     # get request

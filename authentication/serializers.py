@@ -1,11 +1,8 @@
-from typing import Dict, Any, List, Type
-from rest_framework.validators import UniqueValidator
-from django.contrib.auth import get_user_model
+from typing import Dict, Any
 from rest_framework import serializers
-from django.conf import settings
+from authentication.models import User
 
 # Get the user model at module level
-User: Type[Any] = get_user_model()
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -40,6 +37,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
             user.save()
         return user
 
+
 class UserListSerializer(serializers.ModelSerializer):
     """
     Serializer for listing users.
@@ -48,4 +46,5 @@ class UserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'image', 'is_active', 'is_superuser')
+        fields = ('username', 'email', 'first_name', 'last_name',
+                  'image', 'is_active', 'is_superuser')
